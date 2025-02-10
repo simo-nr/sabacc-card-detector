@@ -1,6 +1,8 @@
 import numpy as np
 import cv2
 
+font = cv2.FONT_HERSHEY_SIMPLEX
+
 class Card:
     """Structure to store information about query cards in the camera image."""
 
