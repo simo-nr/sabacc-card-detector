@@ -1,35 +1,58 @@
 import cv2
 import numpy as np
 
-image = cv2.imread('test2.png')
+# Load the image
+image = cv2.imread("shapes.png")
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+blur = cv2.GaussianBlur(gray, (5, 5), 0)
+_, thresh = cv2.threshold(blur, 127, 255, cv2.THRESH_BINARY)
+thresh = cv2.bitwise_not(thresh)
+# cv2.imshow("Threshold", thresh)
 
-lower_red = np.array([50, 40, 0], dtype = "uint8")
-upper_red = np.array([100, 100, 255], dtype = "uint8")
+# Find contours
+contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-lower_green = np.array([30, 20, 30], dtype = "uint8")
-upper_green = np.array([100, 255, 100], dtype = "uint8")
+# Iterate through contours
+for contour in contours:
+    # Calculate the perimeter of the contour
+    peri = cv2.arcLength(contour, True)
+    # Approximate the contour
+    approx = cv2.approxPolyDP(contour, 0.04 * peri, True)
 
-lower_blue = np.array([0, 0, 0], dtype = "uint8")
-upper_blue = np.array([255, 30, 30], dtype = "uint8")
+    # Draw the approximated polygon
+    cv2.polylines(image, [approx], True, (0, 255, 255), 2)  # Yellow for approximation
 
-mask_red = cv2.inRange(image, lower_red, upper_red)
-mask_green = cv2.inRange(image, lower_green, upper_green)
-mask_blue = cv2.inRange(image, lower_blue, upper_blue)
+    # Count the number of vertices
+    vertices = len(approx)
 
-pixels_red = cv2.countNonZero(mask_red)
-pixels_green = cv2.countNonZero(mask_green)
-pixels_blue = cv2.countNonZero(mask_blue)
+    # Detect shape based on vertices
+    if vertices == 3:
+        shape = "Triangle"
+    elif vertices == 4:
+        # Further check if it's square or rectangle
+        x, y, w, h = cv2.boundingRect(approx)
+        aspect_ratio = float(w) / h
+        if 0.9 <= aspect_ratio <= 1.1:  # Almost square
+            shape = "Square"
+        else:
+            shape = "Rectangle"  # Not needed for your specific case
+    else:
+        # Detect circle by comparing area and perimeter
+        area = cv2.contourArea(contour)
+        if area == 0:
+            continue
+        circularity = 4 * np.pi * (area / (peri * peri))
+        if 0.8 <= circularity <= 1.2:  # Circularity close to 1
+            shape = "Circle"
+        else:
+            shape = "Unknown"
 
-print("Red pixels: ", pixels_red)
-print("Green pixels: ", pixels_green)
-print("Blue pixels: ", pixels_blue)
+    # Draw the contour and the detected shape
+    cv2.drawContours(image, [contour], -1, (0, 255, 0), 2)  # Green for original contour
+    x, y = approx.ravel()[0], approx.ravel()[1]  # Position for text
+    cv2.putText(image, shape, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
 
-# combine the masks
-# combined_mask = cv2.bitwise_or(mask_red, mask_green)
-# combined_mask = cv2.bitwise_or(combined_mask, mask_blue)
-
-detected_output = cv2.bitwise_and(image, image, mask = mask_red)
-
-cv2.imshow("RGB color detection", detected_output)
+# Show the image with approximated shapes and contours
+cv2.imshow("Shapes", image)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
