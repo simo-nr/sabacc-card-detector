@@ -99,7 +99,6 @@ def find_cards(frame):
     # 2) Bigger area than the minimum card size
     # 3) Have no parents
     # 4) Have four corners
-
     for i in range(len(cnts_sort)):
         size = cv2.contourArea(cnts_sort[i])
         peri = cv2.arcLength(cnts_sort[i],True)

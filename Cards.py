@@ -2,8 +2,6 @@ import numpy as np
 import cv2
 from collections import Counter
 
-IGNORE_VALUE = -11
-
 font = cv2.FONT_HERSHEY_SIMPLEX
 
 class Card:
@@ -21,13 +19,6 @@ class Card:
         self.suit = "Unknown" # Suit of card
         
         self.debug_view = [] # Debug view of card
-
-    def get_rank(self):
-        """return the most frequent element in rank_img list"""
-        # counter = Counter([x for x in self.rank_list if x != IGNORE_VALUE])
-        counter = Counter(self.rank_list)
-        most_common_elem = counter.most_common(1)[0][0]
-        return str(most_common_elem)
 
 
 def preprocess_card(contour, image):
