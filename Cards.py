@@ -209,14 +209,22 @@ def get_sign(card):
     green for positive, red for negative"""
     
     # Array = BGR
-    lower_red = np.array([50, 40, 0], dtype = "uint8")
-    upper_red = np.array([100, 100, 255], dtype = "uint8")
+    # lower_red = np.array([50, 40, 0], dtype = "uint8")
+    # upper_red = np.array([100, 100, 255], dtype = "uint8")
 
-    lower_green = np.array([30, 20, 30], dtype = "uint8")
-    upper_green = np.array([100, 255, 100], dtype = "uint8")
+    # lower_green = np.array([30, 20, 30], dtype = "uint8")
+    # upper_green = np.array([100, 255, 100], dtype = "uint8")
 
-    mask_red = cv2.inRange(card.warp, lower_red, upper_red)
-    mask_green = cv2.inRange(card.warp, lower_green, upper_green)
+    lower_hsv_red = np.array([0, 34, 46])
+    upper_hsv_red = np.array([10, 109, 138])
+    
+    lower_hsv_green = np.array([32, 12, 12])
+    upper_hsv_green = np.array([82, 162, 129])
+
+    hsv = cv2.cvtColor(card.warp, cv2.COLOR_BGR2HSV)
+
+    mask_red = cv2.inRange(hsv, lower_hsv_red, upper_hsv_red)
+    mask_green = cv2.inRange(hsv, lower_hsv_green, upper_hsv_green)
 
     pixels_red = cv2.countNonZero(mask_red)
     pixels_green = cv2.countNonZero(mask_green)

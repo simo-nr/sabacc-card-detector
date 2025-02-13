@@ -3,6 +3,7 @@ import numpy as np
 import VideoStream
 # from Cards import Card
 import Cards
+import time
 
 
 # Adaptive threshold levels
@@ -14,7 +15,7 @@ CARD_MIN_AREA = 5000
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 
-video_path = "media/test_vid_2.mov"
+video_path = "media/test_vid.mov"
 videostream = VideoStream.VideoStream(video_path).start()
 
 
