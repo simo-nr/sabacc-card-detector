@@ -51,15 +51,20 @@ def preprocess_card(contour, image):
 
     card.sign = get_sign(card)
 
+    card.rank, card.suit = get_rank_and_suit(card)
+
     # Place the sign of the card on top of the debug view
     card.debug_view = card.warp.copy()
     cv2.putText(card.debug_view, card.sign, (10, 30), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+    cv2.putText(card.debug_view, card.rank, (10, 60), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+    cv2.putText(card.debug_view, card.suit, (10, 90), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
-    card.rank, card.suit = get_rank_and_suit(card)
+    cv2.imshow("Debug view", card.debug_view)
 
     return card
 
 def get_rank_and_suit(card):
+    # cv2.imshow("Card", card.warp)
     # Define the coordinates for the region of interest (ROI)
     x_start, y_start = 55, 115  # Starting coordinates (top-left corner)
     x_end, y_end = 255, 385     # Ending coordinates (bottom-right corner)
@@ -71,20 +76,28 @@ def get_rank_and_suit(card):
 
     gray = cv2.cvtColor(card.rank_img, cv2.COLOR_BGR2GRAY)
     gray = cv2.bitwise_not(gray)
+    # threshold again for some reason because the first time there were some little artifacts
+    _, gray = cv2.threshold(gray, thresh_level, 255, cv2.THRESH_BINARY)
+
     # Find contours
     contours, _ = cv2.findContours(gray, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     image_with_contours = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
     cv2.drawContours(image_with_contours, contours, -1, (0, 255, 0), 2)
 
     # Get the number of distinct shapes
-    num_shapes = len(contours)
+    num_shapes = 0
+    for contour in contours:
+        # check if area of contour is big enough to be distinct shape
+        if cv2.contourArea(contour) > 1000:
+            num_shapes +=1
     # if num_shapes != 2 and num_shapes != 3:
     #     print(f"Number of distinct shapes: {num_shapes}")
     #     cv2.imwrite(f"wrong_rank_{num_shapes}.png", image_with_contours)
 
-    # cv2.imshow("Contours", image_with_contours)
+    cv2.imshow("Contours", image_with_contours)
 
     # Determine suit
+    shape = "Unknown"
     # Iterate through contours
     for contour in contours:
         # Calculate the perimeter of the contour
