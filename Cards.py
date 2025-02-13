@@ -59,7 +59,7 @@ def preprocess_card(contour, image):
     cv2.putText(card.debug_view, card.rank, (10, 60), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
     cv2.putText(card.debug_view, card.suit, (10, 90), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
-    cv2.imshow("Debug view", card.debug_view)
+    # cv2.imshow("Debug view", card.debug_view)
 
     return card
 
@@ -94,7 +94,7 @@ def get_rank_and_suit(card):
     #     print(f"Number of distinct shapes: {num_shapes}")
     #     cv2.imwrite(f"wrong_rank_{num_shapes}.png", image_with_contours)
 
-    cv2.imshow("Contours", image_with_contours)
+    # cv2.imshow("Contours", image_with_contours)
 
     # Determine suit
     shape = "Unknown"
@@ -216,15 +216,18 @@ def get_sign(card):
     # upper_green = np.array([100, 255, 100], dtype = "uint8")
 
     lower_hsv_red = np.array([0, 34, 46])
-    upper_hsv_red = np.array([10, 109, 138])
+    upper_hsv_red = np.array([15, 109, 200])
     
     lower_hsv_green = np.array([32, 12, 12])
-    upper_hsv_green = np.array([82, 162, 129])
+    upper_hsv_green = np.array([82, 162, 200])
 
     hsv = cv2.cvtColor(card.warp, cv2.COLOR_BGR2HSV)
 
     mask_red = cv2.inRange(hsv, lower_hsv_red, upper_hsv_red)
     mask_green = cv2.inRange(hsv, lower_hsv_green, upper_hsv_green)
+
+    # cv2.imshow("Red Mask", mask_red)
+    # cv2.imshow("Green Mask", mask_green)
 
     pixels_red = cv2.countNonZero(mask_red)
     pixels_green = cv2.countNonZero(mask_green)

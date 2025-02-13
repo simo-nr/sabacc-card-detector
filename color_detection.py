@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-image = cv2.imread('media/test_img_6.png')
+image = cv2.imread('media/test_img_7.png')
 
 # lower_red = np.array([50, 40, 0], dtype = "uint8")
 # upper_red = np.array([100, 100, 255], dtype = "uint8")
@@ -15,10 +15,10 @@ image = cv2.imread('media/test_img_6.png')
 
 
 lower_hsv_red = np.array([0, 34, 46])
-upper_hsv_red = np.array([180, 178, 138])
+upper_hsv_red = np.array([15, 109, 200])
 
 lower_hsv_green = np.array([32, 12, 12])
-upper_hsv_green = np.array([82, 162, 129])
+upper_hsv_green = np.array([82, 162, 200])
 
 hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
@@ -43,8 +43,8 @@ detected_output_green = cv2.bitwise_and(image, image, mask = mask_green)
 cv2.imshow("RGB color detection", detected_output)
 cv2.imshow("RGB color detection green", detected_output_green)
 
-cv2.imshow("Red Mask", mask_red)
-cv2.imshow("Green Mask", mask_green)
+# cv2.imshow("Red Mask", mask_red)
+# cv2.imshow("Green Mask", mask_green)
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()

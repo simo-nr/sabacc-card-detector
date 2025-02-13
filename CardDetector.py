@@ -15,7 +15,7 @@ CARD_MIN_AREA = 5000
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 
-video_path = "media/test_vid.mov"
+video_path = "media/test_vid_4.mov"
 videostream = VideoStream.VideoStream(video_path).start()
 
 
@@ -31,7 +31,7 @@ def main():
         
         # Preprocess the frame (gray, blur, and threshold it)
         pre_proc = preprocess_frame(frame)
-        cv2.imshow("Preprocessed", pre_proc)
+        # cv2.imshow("Preprocessed", pre_proc)
         # Find and sort contours of card in the frame
         cnts_sort, cnt_is_card = find_cards(pre_proc)
 

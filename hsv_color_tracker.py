@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 # Load the image
-image_path = "media/test_img_6.png"  # Change to your image path
+image_path = "media/test_img_green.png"  # Change to your image path
 image = cv2.imread(image_path)
 
 if image is None:
@@ -23,12 +23,21 @@ def nothing(x):
     pass
 
 # Create HSV trackbars
+# RED
+# cv2.createTrackbar("Lower H", "Trackbars", 0, 179, nothing)
+# cv2.createTrackbar("Lower S", "Trackbars", 34, 255, nothing)
+# cv2.createTrackbar("Lower V", "Trackbars", 46, 255, nothing)
+# cv2.createTrackbar("Upper H", "Trackbars", 15, 179, nothing)
+# cv2.createTrackbar("Upper S", "Trackbars", 109, 255, nothing)
+# cv2.createTrackbar("Upper V", "Trackbars", 200, 255, nothing)
+
+# GREEN
 cv2.createTrackbar("Lower H", "Trackbars", 32, 179, nothing)
 cv2.createTrackbar("Lower S", "Trackbars", 12, 255, nothing)
 cv2.createTrackbar("Lower V", "Trackbars", 12, 255, nothing)
 cv2.createTrackbar("Upper H", "Trackbars", 82, 179, nothing)
 cv2.createTrackbar("Upper S", "Trackbars", 162, 255, nothing)
-cv2.createTrackbar("Upper V", "Trackbars", 129, 255, nothing)
+cv2.createTrackbar("Upper V", "Trackbars", 200, 255, nothing)
 
 while True:
     # Read trackbar values
