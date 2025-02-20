@@ -59,12 +59,9 @@ def preprocess_card(contour, image):
     cv2.putText(card.debug_view, card.rank, (10, 60), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
     cv2.putText(card.debug_view, card.suit, (10, 90), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
-    # cv2.imshow("Debug view", card.debug_view)
-
     return card
 
 def get_rank_and_suit(card):
-    # cv2.imshow("Card", card.warp)
     # Define the coordinates for the region of interest (ROI)
     x_start, y_start = 55, 115  # Starting coordinates (top-left corner)
     x_end, y_end = 255, 385     # Ending coordinates (bottom-right corner)
@@ -82,17 +79,21 @@ def get_rank_and_suit(card):
     # Find contours
     contours, _ = cv2.findContours(gray, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     image_with_contours = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
-    cv2.drawContours(image_with_contours, contours, -1, (0, 255, 0), 2)
 
     # Get the number of distinct shapes
-    num_shapes = 0
+    actual_contours = []
+    biggest_contour = 0
     for contour in contours:
+        if cv2.contourArea(contour) > biggest_contour:
+            biggest_contour = cv2.contourArea(contour)
         # check if area of contour is big enough to be distinct shape
         if cv2.contourArea(contour) > 1000:
-            num_shapes +=1
-    # if num_shapes != 2 and num_shapes != 3:
-    #     print(f"Number of distinct shapes: {num_shapes}")
-    #     cv2.imwrite(f"wrong_rank_{num_shapes}.png", image_with_contours)
+            actual_contours.append(contour)
+
+    # print(f"Biggest contour: {biggest_contour}")
+    num_shapes = len(actual_contours)
+    
+    cv2.drawContours(image_with_contours, actual_contours, -1, (0, 255, 0), 2)
 
     # cv2.imshow("Contours", image_with_contours)
 
@@ -207,17 +208,11 @@ def flatten(image, pts, w, h):
 def get_sign(card):
     """Determines the sign of the card based on overall color, 
     green for positive, red for negative"""
-    
-    # Array = BGR
-    # lower_red = np.array([50, 40, 0], dtype = "uint8")
-    # upper_red = np.array([100, 100, 255], dtype = "uint8")
 
-    # lower_green = np.array([30, 20, 30], dtype = "uint8")
-    # upper_green = np.array([100, 255, 100], dtype = "uint8")
-
+    # hue saturation value
     lower_hsv_red = np.array([0, 34, 46])
     upper_hsv_red = np.array([15, 109, 200])
-    
+
     lower_hsv_green = np.array([32, 12, 12])
     upper_hsv_green = np.array([82, 162, 200])
 
@@ -231,9 +226,6 @@ def get_sign(card):
 
     pixels_red = cv2.countNonZero(mask_red)
     pixels_green = cv2.countNonZero(mask_green)
-
-    # print("Red pixels: ", pixels_red)
-    # print("Green pixels: ", pixels_green)
 
     return "Positive" if pixels_green > pixels_red else "Negative"
 
