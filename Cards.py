@@ -69,7 +69,7 @@ def preprocess_card(contour, image):
     card.center = [cent_x, cent_y]
 
     # Warp card into 310x500 flattened image using perspective transform
-    card.warp = flatten(image, pts, w, h)
+    card.warp = flatten2(image, pts, w, h)
 
     card.sign = get_sign(card)
 
@@ -280,14 +280,14 @@ def flatten2(image, pts, w, h):
     # before doing the perspective transform
 
     if w <= 0.8*h: # If card is vertically oriented
-        print("vertical")
+        # print("vertical")
         temp_rect[0] = tl
         temp_rect[1] = tr
         temp_rect[2] = br
         temp_rect[3] = bl
 
     if w >= 1.2*h: # If card is horizontally oriented
-        print("horizontal")
+        # print("horizontal")
         temp_rect[0] = bl
         temp_rect[1] = tl
         temp_rect[2] = tr
