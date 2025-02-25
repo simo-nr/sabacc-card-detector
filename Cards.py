@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import math
 from collections import Counter
 
 font = cv2.FONT_HERSHEY_SIMPLEX
@@ -19,6 +20,27 @@ class Card:
         self.suit = "Unknown" # Suit of card
         
         self.debug_view = [] # Debug view of card
+
+
+
+def calculate_distance(point1, point2):
+    return math.sqrt((point2[0] - point1[0])**2 + (point2[1] - point1[1])**2)
+
+def orientation(p1, p2):
+    """Returns orientation of p2 relative to p1."""
+    dx = abs(p1[0] - p2[0])  # Horizontal distance
+    dy = abs(p1[1] - p2[1])  # Vertical distance
+
+    if dy > dx:
+        if p1[1] < p2[1]:
+            return "above"
+        else:
+            return "below"
+    else:
+        if p1[0] < p2[0]:
+            return "left"
+        else:
+            return "right"
 
 
 def preprocess_card(contour, image):
@@ -103,11 +125,23 @@ def get_rank_and_suit(card):
     for contour in contours:
         # Calculate the perimeter of the contour
         peri = cv2.arcLength(contour, True)
+
+        """
+        circle perimeter:       +- 160  (150-170)
+        rectangle perimeter:    +- 180  (170-190)
+        triangle perimeter:     +- 194  (190-200)
+        """
+
         # Approximate the contour
-        approx = cv2.approxPolyDP(contour, 0.04 * peri, True)
+        # approx = cv2.approxPolyDP(contour, 0.04 * peri, True)
+        approx = cv2.approxPolyDP(contour, 10, True)
 
         # Draw the approximated polygon
-        cv2.polylines(gray, [approx], True, (0, 255, 255), 2)  # Yellow for approximation
+        colour = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+        cv2.polylines(colour, [approx], True, (0, 255, 255), 2)  # Yellow for approximation
+        cv2.imshow(f"Debug View:", colour)
+
+        # print(is_circle(contour))
 
         # Count the number of vertices
         vertices = len(approx)
@@ -115,15 +149,18 @@ def get_rank_and_suit(card):
         # Detect shape based on vertices
         if vertices == 3:
             shape = "Triangle"
+            # print("Triangle perimeter:", peri)
         elif vertices == 4:
             x, y, w, h = cv2.boundingRect(approx)
             aspect_ratio = float(w) / h
+            # print("Rectangle perimeter:", peri)
             if 0.85 <= aspect_ratio <= 1.15:
                 shape = "Square"
             else:
-                shape = "Rectangle" # in case of weird stuff
+                shape = "Rectangle very long word and stuff to maybe notice what is happening" # in case of weird stuff
         else:
             # Detect circle by comparing area and perimeter
+            # print("Circle perimeter:", peri)
             area = cv2.contourArea(contour)
             if area == 0:
                 continue
@@ -133,9 +170,94 @@ def get_rank_and_suit(card):
             else:
                 shape = "Unknown"
 
+    # if shape != "Square":
+    #     print(f"Shape: {shape}")
+
     return str(num_shapes), shape
 
+# def is_circle(contour):
+#     """Determines if a contour is a circle based on circularity."""
+#     area = cv2.contourArea(contour)
+#     perimeter = cv2.arcLength(contour, True)
+    
+#     if perimeter == 0:
+#         return False
+
+#     circularity = 4 * np.pi * (area / (perimeter * perimeter))
+
+#     value = 0.8 <= circularity <= 1.2  # Values close to 1 indicate a circle
+
+#     if value == True:
+#         print(circularity)
+
+#     return value
+
 def flatten(image, pts, w, h):
+    """Flattens an image of a card into a top-down 310x500 perspective.
+    Returns the flattened, re-sized image.
+    See www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/"""
+    
+    # choose top left point
+    s = np.sum(pts, axis = 2)
+    actual_tl_index = np.argmin(s)
+    actual_tl = pts[actual_tl_index]
+
+    # calculate distance to other points to check orientation
+    distances = [0 for _ in range(len(pts))]
+    for i, point in enumerate(pts):
+        if i != actual_tl_index:
+            distances[i] = calculate_distance(actual_tl, point)
+
+    # find the point that is closest to the top left point
+    actual_tr = pts[distances.index(min(distances))]
+
+    # determine orientation of the points
+    orientation = orientation(actual_tl, actual_tr)
+    if orientation == "right":
+        # card is upright
+
+        # top left smalles sum
+        # bottom right largest sum
+        s = np.sum(pts, axis = 2)
+        tl = pts[np.argmin(s)]
+        br = pts[np.argmax(s)]
+
+        # top right smallest diff
+        # bottom left largest diff
+        diff = np.diff(pts, axis = -1)
+        tr = pts[np.argmin(diff)]
+        bl = pts[np.argmax(diff)]
+
+    elif orientation == "below":
+        # card is rotated
+        # top right smalles sum
+        # bottom left largest sum
+        s = np.sum(pts, axis = 2)
+        tr = pts[np.argmin(s)]
+        bl = pts[np.argmax(s)]
+
+        # bottom right smallest diff
+        # top left largest diff
+        diff = np.diff(pts, axis = -1)
+        br = pts[np.argmin(diff)]
+        tl = pts[np.argmax(diff)]
+
+
+    temp_rect = np.zeros((4,2), dtype = "float32")
+
+            
+    maxWidth = 310
+    maxHeight = 500
+
+    # Create destination array, calculate perspective transform matrix,
+    # and warp card image
+    dst = np.array([[0,0],[maxWidth-1,0],[maxWidth-1,maxHeight-1],[0, maxHeight-1]], np.float32)
+    M = cv2.getPerspectiveTransform(temp_rect,dst)
+    warp = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
+
+    return warp
+
+def flatten2(image, pts, w, h):
     """Flattens an image of a card into a top-down 310x500 perspective.
     Returns the flattened, re-sized, grayed image.
     See www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/"""
@@ -158,12 +280,14 @@ def flatten(image, pts, w, h):
     # before doing the perspective transform
 
     if w <= 0.8*h: # If card is vertically oriented
+        print("vertical")
         temp_rect[0] = tl
         temp_rect[1] = tr
         temp_rect[2] = br
         temp_rect[3] = bl
 
     if w >= 1.2*h: # If card is horizontally oriented
+        print("horizontal")
         temp_rect[0] = bl
         temp_rect[1] = tl
         temp_rect[2] = tr

@@ -17,7 +17,7 @@ CARD_HISTORY = 5
 font = cv2.FONT_HERSHEY_SIMPLEX
 
 global video_path
-video_path = "media/test_vid_2.mov"
+video_path = "media/test_triangle.mov"
 global videostream
 videostream = VideoStream.VideoStream(video_path).start()
 
@@ -38,9 +38,14 @@ def main():
         
         # Preprocess the frame (gray, blur, and threshold it)
         pre_proc = preprocess_frame(frame)
-        # cv2.imshow("Preprocessed", pre_proc)
+        cv2.imshow("Preprocessed", pre_proc)
+
         # Find and sort contours of card in the frame
         cnts_sort, cnt_is_card = find_cards(pre_proc)
+
+        # Draw contours found by find_cards on the preprocessed frame and show it
+        # full_contours = cv2.drawContours(pre_proc.copy(), [cnts_sort[i] for i in range(len(cnts_sort)) if cnt_is_card[i] == 1], -1, (255,255,0), 2)
+        # cv2.imshow("All contours", full_contours)
 
         # Draw card contours on image if contour is card
         # (have to do contours all at once or they do not show up properly for some reason)
@@ -64,7 +69,7 @@ def main():
             if len(cards) != 0:
                 tmp_cnts = []
                 for i, card in enumerate(cards):
-                    # cv2.imshow(f"Card: {i}", card.debug_view)
+                    cv2.imshow(f"Card: {i}", card.debug_view)
                     # cv2.imshow(f"Card: {i}", card.warp)
                     tmp_cnts.append(card.contour)
                 cv2.drawContours(frame, tmp_cnts, -1, (255,0,0), 2)
@@ -73,16 +78,18 @@ def main():
         if len(detected_cards) > CARD_HISTORY:
             detected_cards.pop(0)
 
+        """
         # check if all items in detected_cards are the same
         if all(s == detected_cards[0] for s in detected_cards) and detected_cards[0] != set():
             # print(f"Cards are the same in the last {len(detected_cards)} frames: frame {frame_counter}")
             if last_message_send != detected_cards[-1]:
                 last_message_send = detected_cards[-1]
                 print("send message: ", last_message_send)
+        """
 
-            # debug stuff
-            # if detected_cards[0] != {('Negative', '2', 'Square'), ('Positive', '3', 'Circle')}:
-            #     print(detected_cards[0])
+        # debug stuff
+        # if detected_cards[0] != {('Positive', '4', 'Triangle')}:
+        #     print(detected_cards[0])
         
         # Show the video feed
         cv2.imshow("Live Feed", frame)
@@ -103,7 +110,7 @@ def preprocess_frame(frame):
     # Apply GaussianBlur to reduce noise
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
-    thresh_level = 190 # 190 for bright cards, 120 for dark cards
+    thresh_level = 175 # 190 for bright cards, 120 for dark cards, maybe 175 for bright cards because of smudges
     _, thresh = cv2.threshold(blurred, thresh_level, 255, cv2.THRESH_BINARY)
     return thresh
 
