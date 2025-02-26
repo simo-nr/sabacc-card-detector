@@ -55,18 +55,18 @@ def main():
         end_preprocess_time = time.time()
         preprocess_time.append(end_preprocess_time - start_preprocess_time)
         # print(f"Preprocessing time: {preprocess_time:.4f} seconds")
-        cv2.imshow("Preprocessed", pre_proc)
+        # cv2.imshow("Preprocessed", pre_proc)
 
         detection_start_time = time.time()
         # Find and sort contours of card in the frame
-        cnts_sort, cnt_is_card = find_cards(pre_proc)
+        cnts_sort, cnt_is_card = find_cards(pre_proc, frame)
         detection_end_time = time.time()
         detection_times.append(detection_end_time - detection_start_time)
 
         contour_start_time = time.time()
         # Draw contours found by find_cards on the preprocessed frame and show it
         full_contours = cv2.drawContours(frame.copy(), [cnts_sort[i] for i in range(len(cnts_sort)) if cnt_is_card[i] == 1], -1, (255,255,0), 2)
-        cv2.imshow("All contours", full_contours)
+        # cv2.imshow("All contours", full_contours)
         contour_times.append(time.time() - contour_start_time)
 
         # Draw card contours on image if contour is card
@@ -95,7 +95,7 @@ def main():
             if len(cards) != 0:
                 tmp_cnts = []
                 for i, card in enumerate(cards):
-                    cv2.imshow(f"Card: {i}", card.debug_view)
+                    # cv2.imshow(f"Card: {i}", card.debug_view)
                     # cv2.imshow(f"Card: {i}", card.warp)
                     tmp_cnts.append(card.contour)
                 cv2.drawContours(frame, tmp_cnts, -1, (255,0,0), 2)
@@ -120,7 +120,7 @@ def main():
         #     print(detected_cards[0])
         
         # Show the video feed
-        cv2.imshow("Live Feed", frame)
+        # cv2.imshow("Live Feed", frame)
 
         key = cv2.waitKey(1) & 0xFF
         if key == ord("q"):
@@ -222,13 +222,18 @@ def preprocess_frame(frame, previous_edges=None):
 
     return filtered, edges
 
-def find_cards(frame):
+def find_cards(frame, og_frame):
     # Find contours in the tresholded image
     contours, hierarchy = cv2.findContours(frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     # If there are no contours, do nothing
     if len(contours) == 0:
         return [], []
     
+    # draw contours on frame
+    all_cont_frame = og_frame.copy()
+    cv2.drawContours(all_cont_frame, contours, -1, (0, 255, 0), 2)
+    cv2.imshow("All contours", all_cont_frame)
+
     # sort contour indices by contour size
     index_sort = sorted(range(len(contours)), key=lambda i : cv2.contourArea(contours[i]), reverse=True)
 
@@ -258,8 +263,15 @@ def find_cards(frame):
             and (hier_sort[i][3] == -1) and (len(approx) == 4)):
             cnt_is_card[i] = 1
 
+    # draw contours of all cards on frame
+    card_cont_frame = og_frame.copy()
+    cv2.drawContours(card_cont_frame, [cnts_sort[i] for i in range(len(cnts_sort)) if cnt_is_card[i] == 1], -1, (255,0,0), 2)
+    cv2.imshow("Card contours", card_cont_frame)
+
+
     # TODO: remove frame from return
-    return cnts_sort, cnt_is_card#, frame
+    # TODO: simplify this so cnt_is_card isnt returned
+    return cnts_sort, cnt_is_card
 
 def draw_results(frame, card):
     """Draw the card name, center point, and contour on the camera image."""
