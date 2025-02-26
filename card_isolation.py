@@ -12,7 +12,7 @@ MORPH_OP = True
 HOUGH_LINES = False
 CONT_APPROX = False
 
-video_path = "media/test_triangle.mov"
+video_path = "media/test_flatten.mov"
 stream = cv2.VideoCapture(video_path)
 
 # initialize previous edges
@@ -78,7 +78,7 @@ while True:
         approx_contours = contours
 
     # draw contours
-    # cv2.drawContours(frame, approx_contours, -1, (0, 255, 0), 2)
+    cv2.drawContours(frame, approx_contours, -1, (0, 255, 0), 2)
 
     # Step 5: Create a mask that includes everything inside the detected contours
     mask = np.zeros_like(gray)
@@ -107,12 +107,17 @@ while True:
     cv2.imshow("Combined", filtered)
     cv2.imshow("contours", frame)
 
+    # filter contours by size
+    contours = [contour for contour in contours if cv2.contourArea(contour) > 1000]
+
     # flatten detected contours and display
     for i, contour in enumerate(contours):
+        if len(contour) < 4:
+            continue
         x, y, w, h = cv2.boundingRect(contour)
 
-        peri = cv2.arcLength(contour,True)
-        approx = cv2.approxPolyDP(contour,0.01*peri,True)
+        peri = cv2.arcLength(contour, True)
+        approx = cv2.approxPolyDP(contour, 0.01 * peri, True)
         pts = np.float32(approx)
 
         flattened, frame = flattener2(frame, pts, w, h)

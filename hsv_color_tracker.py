@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 # Load the image
-image_path = "media/test_img_1.png"  # Change to your image path
+image_path = "media/background_test.png"  # Change to your image path
 image = cv2.imread(image_path)
 
 if image is None:
