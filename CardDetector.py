@@ -27,6 +27,7 @@ def main():
     last_message_send = []
     frame_counter = 0
 
+    prev_edges = np.zeros((1, 1))
     cam_quit = 0 # Loop control variable
     while cam_quit == 0:
         # Grab frame from video stream
@@ -37,7 +38,7 @@ def main():
             break
         
         # Preprocess the frame (gray, blur, and threshold it)
-        pre_proc = preprocess_frame(frame)
+        pre_proc, prev_edges = preprocess_frame(frame, prev_edges)
         cv2.imshow("Preprocessed", pre_proc)
 
         # Find and sort contours of card in the frame
@@ -104,15 +105,47 @@ def main():
     cv2.destroyAllWindows()
     videostream.stop()
 
-def preprocess_frame(frame):
-    # Convert frame to grayscale
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    # Apply GaussianBlur to reduce noise
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+def preprocess_frame(frame, previous_edges=None):
+    """Preprocess the frame by applying Gaussian blur, Canny edge detection, and thresholding."""
+    # Step 1: Apply Gaussian Blur and convert to grayscale
+    blurred = cv2.GaussianBlur(frame, (5, 5), 0)
+    gray = cv2.cvtColor(blurred, cv2.COLOR_BGR2GRAY)
 
+    # Step 2: Apply Canny Edge Detection
+    edges = cv2.Canny(gray, 110, 150)
+
+    MORPH_OP = True
+    TEMP_SMOOTHING = True
+
+    if MORPH_OP:
+        kernel = np.ones((3,3), np.uint8)  # Small kernel to avoid over-smoothing
+        edges = cv2.Canny(gray, 110, 150)
+        edges = cv2.dilate(edges, kernel, iterations=1)  # Expand edges slightly
+        edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel, iterations=2)  # Close gaps
+
+    if TEMP_SMOOTHING:
+        if previous_edges is None:
+            previous_edges = np.zeros((1, 1))
+        alpha = 0.5  # Adjust for smoother or sharper edges
+        edges = cv2.addWeighted(previous_edges, alpha, edges, 1 - alpha, 0)
+        # prev_prev_edges = previous_edges.copy()  # Update for the next frame
+        previous_edges = edges.copy()  # Update for the next frame
+    
+    # Step 3: Apply Thresholding
     thresh_level = 175 # 190 for bright cards, 120 for dark cards, maybe 175 for bright cards because of smudges
-    _, thresh = cv2.threshold(blurred, thresh_level, 255, cv2.THRESH_BINARY)
-    return thresh
+    _, thresholded = cv2.threshold(gray, thresh_level, 255, cv2.THRESH_BINARY)
+
+    # Step 4: Find contours in the edge-detected image
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Step 5: Create a mask that includes everything inside the detected contours
+    mask = np.zeros_like(gray)
+    cv2.drawContours(mask, contours, -1, (255), thickness=cv2.FILLED)
+
+    # Step 6: Use the mask to filter the thresholded image
+    filtered = cv2.bitwise_and(thresholded, thresholded, mask=mask)
+
+    return filtered, edges
 
 def find_cards(frame):
     # Find contours in the tresholded image
@@ -144,7 +177,7 @@ def find_cards(frame):
     for i in range(len(cnts_sort)):
         size = cv2.contourArea(cnts_sort[i])
         peri = cv2.arcLength(cnts_sort[i],True)
-        approx = cv2.approxPolyDP(cnts_sort[i],0.01*peri,True)
+        approx = cv2.approxPolyDP(cnts_sort[i], 0.01 * peri, True)
         
         if ((size < CARD_MAX_AREA) and (size > CARD_MIN_AREA)
             and (hier_sort[i][3] == -1) and (len(approx) == 4)):
