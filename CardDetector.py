@@ -232,7 +232,7 @@ def find_cards(frame, og_frame):
     # draw contours on frame
     all_cont_frame = og_frame.copy()
     cv2.drawContours(all_cont_frame, contours, -1, (0, 255, 0), 2)
-    cv2.imshow("All contours", all_cont_frame)
+    # cv2.imshow("All contours", all_cont_frame)
 
     # sort contour indices by contour size
     index_sort = sorted(range(len(contours)), key=lambda i : cv2.contourArea(contours[i]), reverse=True)
@@ -257,11 +257,25 @@ def find_cards(frame, og_frame):
     for i in range(len(cnts_sort)):
         size = cv2.contourArea(cnts_sort[i])
         peri = cv2.arcLength(cnts_sort[i],True)
-        approx = cv2.approxPolyDP(cnts_sort[i], 0.01 * peri, True)
+        # approx = cv2.approxPolyDP(cnts_sort[i], 0.01 * peri, True)
         
-        if ((size < CARD_MAX_AREA) and (size > CARD_MIN_AREA)
-            and (hier_sort[i][3] == -1) and (len(approx) == 4)):
+        # if ((size < CARD_MAX_AREA) and (size > CARD_MIN_AREA)
+        #     and (hier_sort[i][3] == -1) and (len(approx) == 4)):
+        #     cnt_is_card[i] = 1
+        if ((size > CARD_MIN_AREA) and (hier_sort[i][3] == -1)):
             cnt_is_card[i] = 1
+
+    # draw approximate contours on frame
+    approx_cont_frame = og_frame.copy()
+    for i in range(len(cnts_sort)):
+        if cnt_is_card[i] == 1:
+            # peri = cv2.arcLength(cnts_sort[i], True)
+            rect = cv2.minAreaRect(cnts_sort[i])
+            box = cv2.boxPoints(rect)  # Get 4 corner points
+            box = np.intp(box)  # Convert to integer values
+
+            cv2.drawContours(approx_cont_frame, [box], -1, (255, 0, 0), 2)
+    cv2.imshow("Approx contours", approx_cont_frame)
 
     # draw contours of all cards on frame
     card_cont_frame = og_frame.copy()
