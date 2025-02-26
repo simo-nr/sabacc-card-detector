@@ -16,6 +16,8 @@ def flattener2(image, pts, w, h):
     See www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/"""
     temp_rect = np.zeros((4,2), dtype = "float32")
 
+    print(f"Points: {pts}")
+
     # print(f"Points: {pts}")
     
     s = np.sum(pts, axis = 2)
@@ -210,67 +212,68 @@ def get_orientation(w, h):
     else:
         return "diagonal"
 
-# Example usage in your code
-while True:
-    ret, frame = stream.read()
-    if not ret:
-        break
+if __name__ == "__main__":
+    # Example usage in your code
+    while True:
+        ret, frame = stream.read()
+        if not ret:
+            break
 
-    # Convert the frame to grayscale and apply Gaussian blur
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray, (5, 5), 0)
+        # Convert the frame to grayscale and apply Gaussian blur
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        blur = cv2.GaussianBlur(gray, (5, 5), 0)
 
-    # Apply edge detection
-    # edged = cv2.Canny(blur, 75, 200)
-    thresh_level = 175 # 190 for bright cards, 120 for dark cards, maybe 175 for bright cards because of smudges
-    _, threshold = cv2.threshold(blur, thresh_level, 255, cv2.THRESH_BINARY)
+        # Apply edge detection
+        # edged = cv2.Canny(blur, 75, 200)
+        thresh_level = 175 # 190 for bright cards, 120 for dark cards, maybe 175 for bright cards because of smudges
+        _, threshold = cv2.threshold(blur, thresh_level, 255, cv2.THRESH_BINARY)
 
-    cv2.imshow("Threshold", threshold)
+        cv2.imshow("Threshold", threshold)
 
-    # Find contours in the edged image
-    contours, _ = cv2.findContours(threshold, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        # Find contours in the edged image
+        contours, _ = cv2.findContours(threshold, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Initialize a variable to store the largest contour
-    largest_contour = None
-    max_area = 0
+        # Initialize a variable to store the largest contour
+        largest_contour = None
+        max_area = 0
 
-    # Loop over the contours
-    for contour in contours:
-        # Approximate the contour
-        peri = cv2.arcLength(contour, True)
-        approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
+        # Loop over the contours
+        for contour in contours:
+            # Approximate the contour
+            peri = cv2.arcLength(contour, True)
+            approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
 
-        # If the contour has four points, it is likely to be a rectangle
-        if len(approx) == 4:
-            area = cv2.contourArea(contour)
-            if area > max_area:
-                largest_contour = approx
-                print(f"Approx: {approx}")
-                max_area = area
+            # If the contour has four points, it is likely to be a rectangle
+            if len(approx) == 4:
+                area = cv2.contourArea(contour)
+                if area > max_area:
+                    largest_contour = approx
+                    print(f"Approx: {approx}")
+                    max_area = area
 
-    # If a largest contour was found, flatten it and show the result
-    if largest_contour is not None:
-        x, y, w, h = cv2.boundingRect(largest_contour)
-        card_orientation = get_orientation(w, h)
-        # print(f"Card orientation: {card_orientation}")
+        # If a largest contour was found, flatten it and show the result
+        if largest_contour is not None:
+            x, y, w, h = cv2.boundingRect(largest_contour)
+            card_orientation = get_orientation(w, h)
+            # print(f"Card orientation: {card_orientation}")
 
-        flattened2, frame = flattener2(frame, largest_contour, w, h)
-        cv2.imshow("Flattened2", flattened2)
+            flattened2, frame = flattener2(frame, largest_contour, w, h)
+            cv2.imshow("Flattened2", flattened2)
 
-        # flattened, frame = flattener(frame, largest_contour, w, h)
-        # cv2.imshow("Flattened", flattened)
+            # flattened, frame = flattener(frame, largest_contour, w, h)
+            # cv2.imshow("Flattened", flattened)
 
-    # Show the original frame with contours
-    cv2.drawContours(frame, [largest_contour], -1, (0, 255, 0), 3)
-    cv2.imshow("Frame", frame)
+        # Show the original frame with contours
+        cv2.drawContours(frame, [largest_contour], -1, (0, 255, 0), 3)
+        cv2.imshow("Frame", frame)
 
-    # Break the loop if 'q' is pressed
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+        # Break the loop if 'q' is pressed
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
-# Release the video stream and close windows
-stream.release()
-cv2.destroyAllWindows()
+    # Release the video stream and close windows
+    stream.release()
+    cv2.destroyAllWindows()
 
-end_time = time.time()
-print(f"Time taken: {end_time - start_time} seconds")
+    end_time = time.time()
+    print(f"Time taken: {end_time - start_time} seconds")
