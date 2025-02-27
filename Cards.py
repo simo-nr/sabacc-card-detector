@@ -55,14 +55,55 @@ def preprocess_card(contour, image):
     # Find perimeter of card and use it to approximate corner points
     contour = cv2.convexHull(contour)
     peri = cv2.arcLength(contour, True)
-    approx = cv2.approxPolyDP(contour, 0.01 * peri, True)
+    approx = cv2.approxPolyDP(contour, 0.003 * peri, True)
     pts = np.float32(approx)
     card.corner_pts = pts
 
+    # draw approx on image
+    cv2.polylines(image, [approx], True, (0, 255, 0), 2)
+    # print(len(pts))
+
+    # find 4 longest lines in approx
+    longest_edges = find_longest_edges(approx, 4)
+
+    # draw the 4 longest lines on the image
+    for edge in longest_edges:
+        cv2.line(image, edge[0], edge[1], (0, 100, 255), 2)
+
+    # extend the lines
+    extended_lines = []
+    for pt1, pt2 in longest_edges:
+        p1, p2 = extend_line(pt1, pt2)
+        extended_lines.append((p1, p2))
+        # draw_line_from_equation(image, m, b)
+        cv2.line(image, p1, p2, (255, 0, 0), 1)
+
+    # find the intersection of the lines
+    for i in range(len(extended_lines)):
+        for j in range(i+1, len(extended_lines)):
+            try:
+                pt1, pt2 = extended_lines[i]
+                pt3, pt4 = extended_lines[j]
+                m1, b1 = line_equation(pt1, pt2)
+                m2, b2 = line_equation(pt3, pt4)
+                intersection = line_intersection(m1, b1, m2, b2)
+            except:
+                print(f"Line 1: Point 1: {pt1}, Point 2: {pt2}, Slope: {round(m1, 2)}, Intercept: {round(b1, 2)}")
+                print(f"Line 2: Point 3: {pt3}, Point 4: {pt4}, Slope: {round(m2, 2)}, Intercept: {round(b2, 2)}")
+                intersection = None
+            if intersection is not None:
+                cv2.circle(image, intersection, 9, (0, 255, 0), -1)
+                # print(intersection)
+
+    cv2.imshow("Approx", image)
     # draw the card corners on the image
-    for point in pts:
-        cv2.circle(image, (int(point[0][0]), int(point[0][1])), 9, (0, 0, 255), -1)
-    cv2.imshow("Corners", image)
+    if len(pts) == 4:
+        cv2.circle(image, (int(pts[0][0][0]), int(pts[0][0][1])), 9, (0, 0, 255), -1)
+        cv2.circle(image, (int(pts[1][0][0]), int(pts[1][0][1])), 9, (0, 255, 255), -1)
+        cv2.circle(image, (int(pts[2][0][0]), int(pts[2][0][1])), 9, (255, 0, 255), -1)
+        cv2.circle(image, (int(pts[3][0][0]), int(pts[3][0][1])), 9, (0, 255, 0), -1)
+
+    
 
     # # Find width and height of card's bounding rectangle
     # x, y, w, h = cv2.boundingRect(contour)
@@ -78,8 +119,8 @@ def preprocess_card(contour, image):
     # Warp card into 310x500 flattened image using perspective transform
     card.warp, image = flatten2(image, pts, w, h)
 
-    cv2.imshow("with corners", image)
-    cv2.imshow("Warp", card.warp)
+    # cv2.imshow("with corners", image)
+    # cv2.imshow("Warp", card.warp)
 
     card.sign = get_sign(card)
 
@@ -92,6 +133,71 @@ def preprocess_card(contour, image):
     cv2.putText(card.debug_view, card.suit, (10, 90), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
     return card
+
+def find_longest_edges(approx, top_n=4):
+    """
+    Given an approxPolyDP contour, finds the top N longest edges.
+    Returns a list of line segments [(pt1, pt2), ...] sorted by length.
+    """
+    edges = []
+    for i in range(len(approx)):
+        pt1 = tuple(approx[i][0])  # Current point
+        pt2 = tuple(approx[(i + 1) % len(approx)][0])  # Next point (loop back to start)
+        # Calculate Euclidean distance
+        length = np.linalg.norm(np.array(pt1) - np.array(pt2))
+        edges.append((length, pt1, pt2))
+    
+    # Sort by length (descending)
+    edges.sort(reverse=True, key=lambda x: x[0])
+    return [(edge[1], edge[2]) for edge in edges[:top_n]]  # Return only points,
+
+def line_equation(pt1, pt2):
+    """Returns (slope, intercept) for a line passing through pt1 and pt2."""
+    x1, y1 = pt1
+    x2, y2 = pt2
+    if x1 == x2:  # Vertical line case
+        return None, x1  # None slope, x = constant
+    m = (y2 - y1) / (x2 - x1)
+    b = y1 - m * x1
+    return m, b
+
+def line_intersection(m1, b1, m2, b2):
+    """Finds intersection of two lines given by y = mx + b."""
+    if m1 == None:
+        x = b1
+        y = m2 * x + b2
+        return int(x), int(y)
+    if m2 == None:
+        x = b2
+        y = m1 * x + b1
+        return int(x), int(y)
+    if m1 == m2:  # Parallel lines (or both vertical)
+        return None
+    x = (b2 - b1) / (m1 - m2)
+    y = m1 * x + b1
+    return int(x), int(y)
+
+def extend_line(pt1, pt2, length=1000):
+    """Extends a line segment far beyond its original length."""
+    x1, y1 = pt1
+    x2, y2 = pt2
+    dx, dy = x2 - x1, y2 - y1
+    scale = length / np.linalg.norm((dx, dy))
+    new_pt1 = (int(x1 - dx * scale), int(y1 - dy * scale))
+    new_pt2 = (int(x2 + dx * scale), int(y2 + dy * scale))
+    # return line_equation(new_pt1, new_pt2)
+    return new_pt1, new_pt2
+
+def draw_line_from_equation(img, m, b, color=(0, 255, 0), thickness=2):
+    height, width = img.shape[:2]
+    # Compute y-values at x = 0 and x = width-1
+    y1 = int(m * 0 + b)  # y when x = 0
+    y2 = int(m * (width - 1) + b)  # y when x = width-1
+    # Clip y-values to ensure they stay within image bounds
+    y1 = max(0, min(height - 1, y1))
+    y2 = max(0, min(height - 1, y2))
+    # Draw the line
+    cv2.line(img, (0, y1), (width - 1, y2), color, thickness)
 
 def get_rank_and_suit(card):
     # Define the coordinates for the region of interest (ROI)
@@ -270,7 +376,7 @@ def flatten2(image, pts, w, h):
     """Flattens an image of a card into a top-down 310x500 perspective.
     Returns the flattened, re-sized, grayed image.
     See www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/"""
-    temp_rect = np.zeros((4,2), dtype = "float32")
+    temp_rect = np.zeros((4, 2), dtype = "float32")
     
     # top left smallest sum
     # bottom right largest sum
