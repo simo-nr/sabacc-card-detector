@@ -100,7 +100,7 @@ def main():
                     tmp_cnts.append(card.contour)
                 cv2.drawContours(frame, tmp_cnts, -1, (255,0,0), 2)
             
-            for_2_times.append(time.time() - for_1_time)
+            for_2_times.append(time.time() - for_2_time)
         
         # check list of previous frames
         if len(detected_cards) > CARD_HISTORY:
@@ -120,7 +120,7 @@ def main():
         #     print(detected_cards[0])
         
         # Show the video feed
-        # cv2.imshow("Live Feed", frame)
+        cv2.imshow("Live Feed", frame)
 
         key = cv2.waitKey(1) & 0xFF
         if key == ord("q"):
@@ -265,22 +265,31 @@ def find_cards(frame, og_frame):
         if ((size > CARD_MIN_AREA) and (hier_sort[i][3] == -1)):
             cnt_is_card[i] = 1
 
-    # draw approximate contours on frame
-    approx_cont_frame = og_frame.copy()
-    for i in range(len(cnts_sort)):
-        if cnt_is_card[i] == 1:
-            # peri = cv2.arcLength(cnts_sort[i], True)
-            rect = cv2.minAreaRect(cnts_sort[i])
-            box = cv2.boxPoints(rect)  # Get 4 corner points
-            box = np.intp(box)  # Convert to integer values
+    # # draw approximate contours on frame
+    # approx_cont_frame = og_frame.copy()
+    # for i in range(len(cnts_sort)):
+    #     if cnt_is_card[i] == 1:
+    #         # peri = cv2.arcLength(cnts_sort[i], True)
 
-            cv2.drawContours(approx_cont_frame, [box], -1, (255, 0, 0), 2)
-    cv2.imshow("Approx contours", approx_cont_frame)
+    #         # # approx by rectangle
+    #         # rect = cv2.minAreaRect(cnts_sort[i])
+    #         # box = cv2.boxPoints(rect)  # Get 4 corner points
+    #         # box = np.intp(box)  # Convert to integer values
+
+    #         # approx by polygon
+    #         contour = cv2.convexHull(cnts_sort[i])
+    #         size = cv2.contourArea(contour)
+    #         peri = cv2.arcLength(contour, True)
+    #         approx = cv2.approxPolyDP(contour, 0.01 * peri, True)
+
+
+    #         cv2.drawContours(approx_cont_frame, [approx], -1, (255, 0, 0), 2)
+    # cv2.imshow("Approx contours", approx_cont_frame)
 
     # draw contours of all cards on frame
     card_cont_frame = og_frame.copy()
     cv2.drawContours(card_cont_frame, [cnts_sort[i] for i in range(len(cnts_sort)) if cnt_is_card[i] == 1], -1, (255,0,0), 2)
-    cv2.imshow("Card contours", card_cont_frame)
+    # cv2.imshow("Card contours", card_cont_frame)
 
 
     # TODO: remove frame from return

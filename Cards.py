@@ -53,23 +53,33 @@ def preprocess_card(contour, image):
     card.contour = contour
 
     # Find perimeter of card and use it to approximate corner points
-    peri = cv2.arcLength(contour,True)
-    approx = cv2.approxPolyDP(contour,0.01*peri,True)
+    contour = cv2.convexHull(contour)
+    peri = cv2.arcLength(contour, True)
+    approx = cv2.approxPolyDP(contour, 0.01 * peri, True)
     pts = np.float32(approx)
     card.corner_pts = pts
 
-    # Find width and height of card's bounding rectangle
-    x,y,w,h = cv2.boundingRect(contour)
-    card.width, card.height = w, h
+    # draw the card corners on the image
+    for point in pts:
+        cv2.circle(image, (int(point[0][0]), int(point[0][1])), 9, (0, 0, 255), -1)
+    cv2.imshow("Corners", image)
+
+    # # Find width and height of card's bounding rectangle
+    # x, y, w, h = cv2.boundingRect(contour)
+    # card.width, card.height = w, h
 
     # Find center point of card by taking x and y average of the four corners.
-    average = np.sum(pts, axis=0)/len(pts)
+    average = np.sum(pts, axis=0) / len(pts)
     cent_x = int(average[0][0])
     cent_y = int(average[0][1])
     card.center = [cent_x, cent_y]
-
+    w = 0
+    h = 0
     # Warp card into 310x500 flattened image using perspective transform
-    card.warp = flatten2(image, pts, w, h)
+    card.warp, image = flatten2(image, pts, w, h)
+
+    cv2.imshow("with corners", image)
+    cv2.imshow("Warp", card.warp)
 
     card.sign = get_sign(card)
 
@@ -139,7 +149,7 @@ def get_rank_and_suit(card):
         # Draw the approximated polygon
         colour = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
         cv2.polylines(colour, [approx], True, (0, 255, 255), 2)  # Yellow for approximation
-        cv2.imshow(f"Debug View:", colour)
+        # cv2.imshow(f"Debug View:", colour)
 
         # print(is_circle(contour))
 
@@ -242,10 +252,9 @@ def flatten(image, pts, w, h):
         br = pts[np.argmin(diff)]
         tl = pts[np.argmax(diff)]
 
+    # make array of points in order of [top left, top right, bottom right, bottom left]
+    temp_rect = np.array([tl, tr, br, bl], dtype="float32")
 
-    temp_rect = np.zeros((4,2), dtype = "float32")
-
-            
     maxWidth = 310
     maxHeight = 500
 
@@ -263,7 +272,7 @@ def flatten2(image, pts, w, h):
     See www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/"""
     temp_rect = np.zeros((4,2), dtype = "float32")
     
-    # top left smalles sum
+    # top left smallest sum
     # bottom right largest sum
     s = np.sum(pts, axis = 2)
     tl = pts[np.argmin(s)]
@@ -317,6 +326,13 @@ def flatten2(image, pts, w, h):
             temp_rect[1] = pts[3][0] # Top right
             temp_rect[2] = pts[2][0] # Bottom right
             temp_rect[3] = pts[1][0] # Bottom left
+
+    # draw the name of the corner on the image
+    cv2.putText(image, f"top left", (int(temp_rect[0][0]), int(temp_rect[0][1])), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
+    cv2.putText(image, f"bottom left", (int(temp_rect[1][0]), int(temp_rect[1][1])), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
+    cv2.putText(image, f"bottom right", (int(temp_rect[2][0]), int(temp_rect[2][1])), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
+    cv2.putText(image, f"top right", (int(temp_rect[3][0]), int(temp_rect[3][1])), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
+    
             
     maxWidth = 310
     maxHeight = 500
@@ -327,7 +343,7 @@ def flatten2(image, pts, w, h):
     M = cv2.getPerspectiveTransform(temp_rect,dst)
     warp = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
 
-    return warp
+    return warp, image
 
 def get_sign(card):
     """Determines the sign of the card based on overall color, 
