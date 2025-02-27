@@ -60,7 +60,7 @@ def preprocess_card(contour, image):
     card.corner_pts = pts
 
     # draw approx on image
-    cv2.polylines(image, [approx], True, (0, 255, 0), 2)
+    # cv2.polylines(image, [approx], True, (0, 255, 0), 2)
     # print(len(pts))
 
     # find 4 longest lines in approx
@@ -76,7 +76,7 @@ def preprocess_card(contour, image):
         p1, p2 = extend_line(pt1, pt2)
         extended_lines.append((p1, p2))
         # draw_line_from_equation(image, m, b)
-        cv2.line(image, p1, p2, (255, 0, 0), 1)
+        # cv2.line(image, p1, p2, (255, 0, 0), 1)
 
     # find the intersection of the lines
     for i in range(len(extended_lines)):
@@ -163,6 +163,8 @@ def line_equation(pt1, pt2):
 
 def line_intersection(m1, b1, m2, b2):
     """Finds intersection of two lines given by y = mx + b."""
+    if m1 == None and m2 == None:  # Both lines are vertical
+        return None
     if m1 == None:
         x = b1
         y = m2 * x + b2

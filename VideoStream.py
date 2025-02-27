@@ -9,6 +9,11 @@ class VideoStream:
     def __init__(self, src=0):
         # Initialize the USB camera and the camera image stream
         self.stream = cv2.VideoCapture(src)
+
+        frame_width = int(self.stream.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_height = int(self.stream.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+        print(f"Resolution: {frame_width}x{frame_height}")
         # ret = self.stream.set(3,resolution[0])
         # ret = self.stream.set(4,resolution[1])
         # #ret = self.stream.set(5,framerate) #Doesn't seem to do anything so it's commented out
