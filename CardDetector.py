@@ -17,14 +17,12 @@ CARD_HISTORY = 5
 font = cv2.FONT_HERSHEY_SIMPLEX
 
 global video_path
-video_path = "media/test_vid_2.mov"
+video_path = "media/test_vid_4.mov"
 global videostream
 videostream = VideoStream.VideoStream(video_path).start()
 
 
 def main():
-    detected_cards = [set() for _ in range(CARD_HISTORY)] # Keep track of cards detected in previous frames
-    last_message_send = []
     frame_counter = 0
 
     start_time = time.time()
@@ -33,9 +31,7 @@ def main():
     preprocess_time = []
     frame_times = []
     detection_times = []
-    contour_times = []
     for_1_times = []
-    for_2_times = []
 
     prev_edges = np.zeros((1, 1))
     cam_quit = 0 # Loop control variable
@@ -55,7 +51,7 @@ def main():
         end_preprocess_time = time.time()
         preprocess_time.append(end_preprocess_time - start_preprocess_time)
         # print(f"Preprocessing time: {preprocess_time:.4f} seconds")
-        cv2.imshow("Preprocessed", pre_proc)
+        # cv2.imshow("Preprocessed", pre_proc)
 
         detection_start_time = time.time()
         # Find and sort contours of card in the frame
@@ -63,64 +59,26 @@ def main():
         detection_end_time = time.time()
         detection_times.append(detection_end_time - detection_start_time)
 
-        contour_start_time = time.time()
-        # Draw contours found by find_cards on the preprocessed frame and show it
-        full_contours = cv2.drawContours(frame.copy(), [cnts_sort[i] for i in range(len(cnts_sort)) if cnt_is_card[i] == 1], -1, (255,255,0), 2)
-        # cv2.imshow("All contours", full_contours)
-        contour_times.append(time.time() - contour_start_time)
-
         # Draw card contours on image if contour is card
         # (have to do contours all at once or they do not show up properly for some reason)
         cards = []
         k = 0
         if len(cnts_sort) != 0:
 
-            detected_cards.append(set())
-
             for_1_time = time.time()
 
             for i in range(len(cnts_sort)):
                 if cnt_is_card[i] == 1:
                     cards.append(Cards.preprocess_card(cnts_sort[i], frame))
-                    frame = draw_results(frame, cards[k])
 
-                    # MESSAGE TO NN STUFF: append cards in last frame with info of card
-                    detected_cards[-1].add((cards[k].sign, cards[k].rank, cards[k].suit))
-                    k = k + 1
 
             for_1_times.append(time.time() - for_1_time)
-            
-            for_2_time = time.time()
-            # draw all the card contours together
-            if len(cards) != 0:
-                tmp_cnts = []
-                for i, card in enumerate(cards):
-                    # cv2.imshow(f"Card: {i}", card.debug_view)
-                    # cv2.imshow(f"Card: {i}", card.warp)
-                    tmp_cnts.append(card.contour)
-                cv2.drawContours(frame, tmp_cnts, -1, (255,0,0), 2)
-            
-            for_2_times.append(time.time() - for_2_time)
-        
-        # check list of previous frames
-        if len(detected_cards) > CARD_HISTORY:
-            detected_cards.pop(0)
 
-        """
-        # check if all items in detected_cards are the same
-        if all(s == detected_cards[0] for s in detected_cards) and detected_cards[0] != set():
-            # print(f"Cards are the same in the last {len(detected_cards)} frames: frame {frame_counter}")
-            if last_message_send != detected_cards[-1]:
-                last_message_send = detected_cards[-1]
-                print("send message: ", last_message_send)
-        """
-
-        # debug stuff
-        # if detected_cards[0] != {('Positive', '4', 'Triangle')}:
-        #     print(detected_cards[0])
+        for i, card in enumerate(cards):
+            cv2.imshow(f"Card: {i}", card.debug_view)
         
         # Show the video feed
-        cv2.imshow("Live Feed", frame)
+        # cv2.imshow("Live Feed", frame)
 
         key = cv2.waitKey(1) & 0xFF
         if key == ord("q"):
@@ -142,13 +100,8 @@ def main():
     percent_preprocess = average_preprocess_time / average_frame_time
 
     average_for_1_time = sum(for_1_times) / len(for_1_times)
-    average_for_2_time = sum(for_2_times) / len(for_2_times)
 
     percent_for_1 = average_for_1_time / average_frame_time
-    percent_for_2 = average_for_2_time / average_frame_time
-
-    average_contour_time = sum(contour_times) / len(contour_times)
-    percent_contour_time = average_contour_time / average_frame_time
 
     print(f"\033[91mtime taken: {total_time_taken}\033[0m")
     print(f"\033[91maverage frame time: {average_frame_time} seconds\033[0m")
@@ -161,16 +114,11 @@ def main():
     print(f"\033[92mpercent detection time: {percent_detection}\033[0m")
 
     print(f"\033[93maverage for_1 time: {average_for_1_time}\033[0m")
-    print(f"\033[93maverage for_2 time: {average_for_2_time}\033[0m")
 
-    print(f"contour start time: {average_contour_time}")
 
     print(f"\033[92mpercent for 1: {percent_for_1}\033[0m")
-    print(f"\033[92mpercent for 2: {percent_for_2}\033[0m")
 
-    print(f"percent contour time: {percent_contour_time}")
-
-    total_percent = percent_preprocess + percent_detection + percent_for_1 + percent_for_2 + percent_contour_time
+    total_percent = percent_preprocess + percent_detection + percent_for_1
     print(f"\033[92mtotal percent: {total_percent}\033[0m")
 
     average_fetch_time = sum(fetch_frame_times) / len(fetch_frame_times)
