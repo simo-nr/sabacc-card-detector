@@ -17,7 +17,7 @@ CARD_HISTORY = 5
 font = cv2.FONT_HERSHEY_SIMPLEX
 
 global video_path
-video_path = "media/test_vid_4_short.mov"
+video_path = "media/test_circle.mov"
 global videostream
 videostream = VideoStream.VideoStream(video_path).start()
 
@@ -74,8 +74,9 @@ def main():
 
             for_1_times.append(time.time() - for_1_time)
 
-        # for i, card in enumerate(cards):
-        #     cv2.imshow(f"Card: {i}", card.debug_view)
+        for i, card in enumerate(cards):
+            if card.debug_view is not None:
+                cv2.imshow(f"Card: {i}", card.debug_view)
         
         # Show the video feed
         # cv2.imshow("Live Feed", frame)
@@ -88,7 +89,7 @@ def main():
         frame_time = time.time() - frame_start_time
         frame_times.append(frame_time)
 
-        time.sleep(1)
+        time.sleep(0.03)
 
     total_time_taken = time.time() - start_time
     average_frame_time = sum(frame_times) / len(frame_times)
@@ -171,6 +172,7 @@ def preprocess_frame(frame, previous_edges=None):
     return filtered, edges
 
 def find_cards(frame, og_frame):
+    # TODO better detection if something is shaped like a card
     # Find contours in the tresholded image
     contours, hierarchy = cv2.findContours(frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     # If there are no contours, do nothing
