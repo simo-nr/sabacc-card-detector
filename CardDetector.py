@@ -74,8 +74,8 @@ def main():
 
             for_1_times.append(time.time() - for_1_time)
 
-        for i, card in enumerate(cards):
-            cv2.imshow(f"Card: {i}", card.debug_view)
+        # for i, card in enumerate(cards):
+        #     cv2.imshow(f"Card: {i}", card.debug_view)
         
         # Show the video feed
         # cv2.imshow("Live Feed", frame)
@@ -88,7 +88,7 @@ def main():
         frame_time = time.time() - frame_start_time
         frame_times.append(frame_time)
 
-        time.sleep(5)
+        time.sleep(1)
 
     total_time_taken = time.time() - start_time
     average_frame_time = sum(frame_times) / len(frame_times)

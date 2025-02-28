@@ -132,37 +132,37 @@ def preprocess_card(contour, image):
         print(f"\033[93mIntersections: \n{pts}\033[0m")
 
 
-    # ##################### DEBUG #####################
-    # p1 = (int(pts[0][0][0]), int(pts[0][0][1]))
-    # p2 = (int(pts[1][0][0]), int(pts[1][0][1]))
-    # p3 = (int(pts[2][0][0]), int(pts[2][0][1]))
-    # p4 = (int(pts[3][0][0]), int(pts[3][0][1]))
+    ##################### DEBUG #####################
+    p1 = (int(pts[0][0][0]), int(pts[0][0][1]))
+    p2 = (int(pts[1][0][0]), int(pts[1][0][1]))
+    p3 = (int(pts[2][0][0]), int(pts[2][0][1]))
+    p4 = (int(pts[3][0][0]), int(pts[3][0][1]))
 
-    # sum_loc_p1 = (int(pts[0][0][0]), int(pts[0][0][1]) - 20)
-    # sum_loc_p2 = (int(pts[1][0][0]), int(pts[1][0][1]) - 20)
-    # sum_loc_p3 = (int(pts[2][0][0]), int(pts[2][0][1]) - 20)
-    # sum_loc_p4 = (int(pts[3][0][0]), int(pts[3][0][1]) - 20)
+    sum_loc_p1 = (int(pts[0][0][0]), int(pts[0][0][1]) - 20)
+    sum_loc_p2 = (int(pts[1][0][0]), int(pts[1][0][1]) - 20)
+    sum_loc_p3 = (int(pts[2][0][0]), int(pts[2][0][1]) - 20)
+    sum_loc_p4 = (int(pts[3][0][0]), int(pts[3][0][1]) - 20)
 
-    # cv2.circle(image, p1, 9, (0, 0, 255), -1)
-    # cv2.circle(image, p2, 9, (0, 255, 255), -1)
-    # cv2.circle(image, p3, 9, (255, 0, 255), -1)
-    # cv2.circle(image, p4, 9, (0, 255, 0), -1)
+    cv2.circle(image, p1, 9, (0, 0, 255), -1)
+    cv2.circle(image, p2, 9, (0, 255, 255), -1)
+    cv2.circle(image, p3, 9, (255, 0, 255), -1)
+    cv2.circle(image, p4, 9, (0, 255, 0), -1)
 
-    # sum_p1 = np.sum(p1)
-    # sum_p2 = np.sum(p2)
-    # sum_p3 = np.sum(p3)
-    # sum_p4 = np.sum(p4)
+    sum_p1 = np.sum(p1)
+    sum_p2 = np.sum(p2)
+    sum_p3 = np.sum(p3)
+    sum_p4 = np.sum(p4)
 
-    # cv2.putText(image, f"{p1}", p1, font, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    # cv2.putText(image, f"{p2}", p2, font, 1, (0, 255, 255), 2, cv2.LINE_AA)
-    # cv2.putText(image, f"{p3}", p3, font, 1, (255, 0, 255), 2, cv2.LINE_AA)
-    # cv2.putText(image, f"{p4}", p4, font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+    cv2.putText(image, f"{p1}", p1, font, 1, (0, 0, 255), 2, cv2.LINE_AA)
+    cv2.putText(image, f"{p2}", p2, font, 1, (0, 255, 255), 2, cv2.LINE_AA)
+    cv2.putText(image, f"{p3}", p3, font, 1, (255, 0, 255), 2, cv2.LINE_AA)
+    cv2.putText(image, f"{p4}", p4, font, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
-    # cv2.putText(image, f"{sum_p1}", sum_loc_p1, font, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    # cv2.putText(image, f"{sum_p2}", sum_loc_p2, font, 1, (0, 255, 255), 2, cv2.LINE_AA)
-    # cv2.putText(image, f"{sum_p3}", sum_loc_p3, font, 1, (255, 0, 255), 2, cv2.LINE_AA)
-    # cv2.putText(image, f"{sum_p4}", sum_loc_p4, font, 1, (0, 255, 0), 2, cv2.LINE_AA)
-    # ################## END OF DEBUG ##################
+    cv2.putText(image, f"{sum_p1}", sum_loc_p1, font, 1, (0, 0, 255), 2, cv2.LINE_AA)
+    cv2.putText(image, f"{sum_p2}", sum_loc_p2, font, 1, (0, 255, 255), 2, cv2.LINE_AA)
+    cv2.putText(image, f"{sum_p3}", sum_loc_p3, font, 1, (255, 0, 255), 2, cv2.LINE_AA)
+    cv2.putText(image, f"{sum_p4}", sum_loc_p4, font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+    ################## END OF DEBUG ##################
 
     # Find width and height of card's bounding rectangle
     x, y, w, h = cv2.boundingRect(contour)
@@ -361,70 +361,67 @@ def flatten(image, pts, w, h):
 
     # print(f"Points before: {pts}")
     pts = pts.reshape(4, 2)
-    # print(f"Points after: {pts}")
+    print(f"Points: {pts}")
+
+    # FIRST ASSUME CARD IS UPRIGHT
     
-    # choose top left point
+    # choose top left point, smallest sum of coordinates
     s = np.sum(pts, axis = 1)
-    frame_tl_index = np.argmin(s)
-    frame_tl = pts[frame_tl_index]
+    print(f"sum: {s}")
+    tl_index = np.argmin(s)
+    tl = pts[tl_index]
+
+    # choose top right point, smallest difference of coordinates
+    diff = np.diff(pts, axis = 1).flatten()
+    print(f"diff: {diff}")
+    tr = pts[np.argmin(diff)]
+    print(f"smallest diff point, top right: {tr}")
+    bl = pts[np.argmax(diff)]
+
+    # choose bottom right point, largest sum of coordinates
+    br = pts[np.argmax(s)]
 
     # calculate distance to other points to check orientation
     distances = [0 for _ in range(len(pts))]
     for i, point in enumerate(pts):
-        if i != frame_tl_index:
-            distances[i] = calculate_distance(frame_tl, point)
+        if i != tl_index:
+            distances[i] = calculate_distance(tl, point)
 
     # find the point that is closest to the top left point
-    frame_tr = pts[distances.index(min([dist for dist in distances if dist > 0]))]
+    closest = pts[distances.index(min([dist for dist in distances if dist > 0]))]
 
-    # print(f"frame_tl: {frame_tl}, frame_tr: {frame_tr}")
-
+    # if not np.array_equal(tr, closest):
+    #     print(f"\033[91mNOT EQUAL: tr: {tr}, closest: {closest}\033[0m")
+            
     # determine orientation of the points
-    orientation = get_orientation(frame_tl, frame_tr)
+    orientation = get_orientation(tl, closest)
     # print(f"Orientation: {orientation}")
+    temp_rect = np.zeros((4, 2), dtype = "float32")
     if orientation == "left":
+        print("Upright")
         # card is upright
-
-        # top left smallest sum
-        # bottom right largest sum
-        s = np.sum(pts, axis = 1)
-        tl = pts[np.argmin(s)]
-        br = pts[np.argmax(s)]
-
-        # remove selected points from pts
-        pts = np.delete(pts, [np.argmin(s), np.argmax(s)], axis=0)
-
-        # print(pts)
-        # top right smallest diff
-        # bottom left largest diff
-        diff = np.diff(pts, axis = -1)
-        tr = pts[np.argmin(diff)]
-        bl = pts[np.argmax(diff)]
-
+        temp_rect[0] = tl
+        temp_rect[1] = tr
+        temp_rect[2] = br
+        temp_rect[3] = bl
     elif orientation == "above":
+        print("Rotated")
         # card is rotated
-        # top right smallest sum
-        # bottom left largest sum
-        s = np.sum(pts, axis = 1)
-        tr = pts[np.argmin(s)]
-        bl = pts[np.argmax(s)]
-
-        pts = np.delete(pts, [np.argmin(s), np.argmax(s)], axis=0)
-
-        # bottom right smallest diff
-        # top left largest diff
-        diff = np.diff(pts, axis = -1)
-        br = pts[np.argmin(diff)]
-        tl = pts[np.argmax(diff)]
-
+        temp_rect[0] = bl
+        temp_rect[1] = tl
+        temp_rect[2] = tr
+        temp_rect[3] = br
     # make array of points in order of [top left, top right, bottom right, bottom left]
-    temp_rect = np.vstack([tl, tr, br, bl]).astype("float32")
+    # temp_rect = np.vstack([tl, tr, br, bl]).astype("float32")
+
+    if temp_rect.any() == 0:
+        print(f"\033[91mtemp_rect: {temp_rect}\033[0m")
 
     # draw the name of the corner on the image
-    cv2.putText(image, f"top left", (int(temp_rect[0][0]), int(temp_rect[0][1])), font, 1, (0, 255, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"bottom left", (int(temp_rect[1][0]), int(temp_rect[1][1])), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"bottom right", (int(temp_rect[2][0]), int(temp_rect[2][1])), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"top right", (int(temp_rect[3][0]), int(temp_rect[3][1])), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
+    cv2.putText(image, f"top left", (int(temp_rect[0][0]), int(temp_rect[0][1]) + 20), font, 1, (0, 255, 255), 2, cv2.LINE_AA)
+    cv2.putText(image, f"bottom left", (int(temp_rect[1][0]), int(temp_rect[1][1]) + 20), font, 1, (255, 0, 255), 2, cv2.LINE_AA)
+    cv2.putText(image, f"bottom right", (int(temp_rect[2][0]), int(temp_rect[2][1]) + 20), font, 1, (0, 255, 255), 2, cv2.LINE_AA)
+    cv2.putText(image, f"top right", (int(temp_rect[3][0]), int(temp_rect[3][1]) + 20), font, 1, (255, 0, 0), 2, cv2.LINE_AA)
 
     # draw points from temp_rect on image
     for point in temp_rect:
@@ -437,8 +434,8 @@ def flatten(image, pts, w, h):
 
     # Create destination array, calculate perspective transform matrix,
     # and warp card image
-    dst = np.array([[0,0],[maxWidth-1,0],[maxWidth-1,maxHeight-1],[0, maxHeight-1]], np.float32)
-    M = cv2.getPerspectiveTransform(temp_rect,dst)
+    dst = np.array([[0, 0], [maxWidth-1, 0], [maxWidth-1, maxHeight-1], [0, maxHeight-1]], np.float32)
+    M = cv2.getPerspectiveTransform(temp_rect, dst)
     warp = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
 
     return warp, image
@@ -510,7 +507,7 @@ def flatten2(image, pts, w, h):
     cv2.putText(image, f"bottom right", (int(temp_rect[2][0]), int(temp_rect[2][1])), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
     cv2.putText(image, f"top right", (int(temp_rect[3][0]), int(temp_rect[3][1])), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
 
-    print(f"temp_rect: {temp_rect}")
+    # print(f"temp_rect: {temp_rect}")
     
             
     maxWidth = 310
