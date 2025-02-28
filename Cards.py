@@ -125,11 +125,15 @@ def preprocess_card(contour, image):
 
     intersections = [pt for pt in intersections if pt[0] is not None and 
                  0 <= pt[0][0] <= 1920 and 0 <= pt[0][1] <= 1080]
+    
+    # TODO better intersection filter, if still longer than 4, remove furthest outlier
 
     pts = np.float32(intersections)
     card.corner_pts = pts
     if len(pts) != 4:
         print(f"\033[93mIntersections: \n{pts}\033[0m")
+        card.debug_view = None
+        return card
 
 
     ##################### DEBUG #####################
@@ -248,17 +252,6 @@ def extend_line(pt1, pt2, length=1000):
     # return line_equation(new_pt1, new_pt2)
     return new_pt1, new_pt2
 
-def draw_line_from_equation(img, m, b, color=(0, 255, 0), thickness=2):
-    height, width = img.shape[:2]
-    # Compute y-values at x = 0 and x = width-1
-    y1 = int(m * 0 + b)  # y when x = 0
-    y2 = int(m * (width - 1) + b)  # y when x = width-1
-    # Clip y-values to ensure they stay within image bounds
-    y1 = max(0, min(height - 1, y1))
-    y2 = max(0, min(height - 1, y2))
-    # Draw the line
-    cv2.line(img, (0, y1), (width - 1, y2), color, thickness)
-
 def get_rank_and_suit(card):
     # Define the coordinates for the region of interest (ROI)
     x_start, y_start = 55, 115  # Starting coordinates (top-left corner)
@@ -346,40 +339,23 @@ def get_rank_and_suit(card):
             else:
                 shape = "Unknown"
 
-    # if shape != "Square":
-    #     print(f"Shape: {shape}")
-
     return str(num_shapes), shape
 
 def flatten(image, pts, w, h):
-    """Flattens an image of a card into a top-down 310x500 perspective.
+    """
+    Flattens an image of a card into a top-down 310x500 perspective.
     Returns the flattened, re-sized image.
-    See www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/"""
+    """
 
-    # TODO: decide on best order of picking points, 
-    # make sure point isnt picked multiple times
-
-    # print(f"Points before: {pts}")
     pts = pts.reshape(4, 2)
-    print(f"Points: {pts}")
 
     # FIRST ASSUME CARD IS UPRIGHT
     
     # choose top left point, smallest sum of coordinates
     s = np.sum(pts, axis = 1)
-    print(f"sum: {s}")
+    # print(f"sum: {s}")
     tl_index = np.argmin(s)
     tl = pts[tl_index]
-
-    # choose top right point, smallest difference of coordinates
-    diff = np.diff(pts, axis = 1).flatten()
-    print(f"diff: {diff}")
-    tr = pts[np.argmin(diff)]
-    print(f"smallest diff point, top right: {tr}")
-    bl = pts[np.argmax(diff)]
-
-    # choose bottom right point, largest sum of coordinates
-    br = pts[np.argmax(s)]
 
     # calculate distance to other points to check orientation
     distances = [0 for _ in range(len(pts))]
@@ -389,43 +365,30 @@ def flatten(image, pts, w, h):
 
     # find the point that is closest to the top left point
     closest = pts[distances.index(min([dist for dist in distances if dist > 0]))]
+    furthest = pts[distances.index(max(distances))]
+    tr = closest
+    br = furthest
 
-    # if not np.array_equal(tr, closest):
-    #     print(f"\033[91mNOT EQUAL: tr: {tr}, closest: {closest}\033[0m")
-            
-    # determine orientation of the points
-    orientation = get_orientation(tl, closest)
-    # print(f"Orientation: {orientation}")
-    temp_rect = np.zeros((4, 2), dtype = "float32")
-    if orientation == "left":
-        print("Upright")
-        # card is upright
-        temp_rect[0] = tl
-        temp_rect[1] = tr
-        temp_rect[2] = br
-        temp_rect[3] = bl
-    elif orientation == "above":
-        print("Rotated")
-        # card is rotated
-        temp_rect[0] = bl
-        temp_rect[1] = tl
-        temp_rect[2] = tr
-        temp_rect[3] = br
+    # remove tr and br from pts
+    pts = np.delete(pts, [np.where(pts == tl)[0][0], np.where(pts == tr)[0][0], np.where(pts == br)[0][0]], axis=0)
+    # bottom left is remaining point
+    bl = pts[0]
+    
     # make array of points in order of [top left, top right, bottom right, bottom left]
-    # temp_rect = np.vstack([tl, tr, br, bl]).astype("float32")
-
-    if temp_rect.any() == 0:
-        print(f"\033[91mtemp_rect: {temp_rect}\033[0m")
+    temp_rect = np.zeros((4, 2), dtype = "float32")
+    temp_rect[0] = tl
+    temp_rect[1] = tr
+    temp_rect[2] = br
+    temp_rect[3] = bl
 
     # draw the name of the corner on the image
     cv2.putText(image, f"top left", (int(temp_rect[0][0]), int(temp_rect[0][1]) + 20), font, 1, (0, 255, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"bottom left", (int(temp_rect[1][0]), int(temp_rect[1][1]) + 20), font, 1, (255, 0, 255), 2, cv2.LINE_AA)
+    cv2.putText(image, f"top right", (int(temp_rect[1][0]), int(temp_rect[1][1]) + 20), font, 1, (255, 0, 255), 2, cv2.LINE_AA)
     cv2.putText(image, f"bottom right", (int(temp_rect[2][0]), int(temp_rect[2][1]) + 20), font, 1, (0, 255, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"top right", (int(temp_rect[3][0]), int(temp_rect[3][1]) + 20), font, 1, (255, 0, 0), 2, cv2.LINE_AA)
+    cv2.putText(image, f"bottom left", (int(temp_rect[3][0]), int(temp_rect[3][1]) + 20), font, 1, (255, 0, 0), 2, cv2.LINE_AA)
 
     # draw points from temp_rect on image
     for point in temp_rect:
-        # x, y = point[0]
         x, y = point
         cv2.circle(image, (int(x), int(y)), 9, (0, 0, 255), -1)
 
@@ -437,164 +400,6 @@ def flatten(image, pts, w, h):
     dst = np.array([[0, 0], [maxWidth-1, 0], [maxWidth-1, maxHeight-1], [0, maxHeight-1]], np.float32)
     M = cv2.getPerspectiveTransform(temp_rect, dst)
     warp = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
-
-    return warp, image
-
-def flatten2(image, pts, w, h):
-    """Flattens an image of a card into a top-down 310x500 perspective.
-    Returns the flattened, re-sized, grayed image.
-    See www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/"""
-    temp_rect = np.zeros((4, 2), dtype = "float32")
-    
-    # top left smallest sum
-    # bottom right largest sum
-    s = np.sum(pts, axis = 2)
-    tl = pts[np.argmin(s)]
-    br = pts[np.argmax(s)]
-
-    # top right smallest diff
-    # bottom left largest diff
-    diff = np.diff(pts, axis = -1)
-    tr = pts[np.argmin(diff)]
-    bl = pts[np.argmax(diff)]
-
-    # Need to create an array listing points in order of
-    # [top left, top right, bottom right, bottom left]
-    # before doing the perspective transform
-
-    if w <= 0.8*h: # If card is vertically oriented
-        # print("vertical")
-        temp_rect[0] = tl
-        temp_rect[1] = tr
-        temp_rect[2] = br
-        temp_rect[3] = bl
-
-    if w >= 1.2*h: # If card is horizontally oriented
-        # print("horizontal")
-        temp_rect[0] = bl
-        temp_rect[1] = tl
-        temp_rect[2] = tr
-        temp_rect[3] = br
-
-    # If the card is 'diamond' oriented, a different algorithm
-    # has to be used to identify which point is top left, top right
-    # bottom left, and bottom right.
-    
-    if w > 0.8*h and w < 1.2*h: #If card is diamond oriented
-        # If furthest left point is higher than furthest right point,
-        # card is tilted to the left.
-        if pts[1][0][1] <= pts[3][0][1]:
-            # If card is titled to the left, approxPolyDP returns points
-            # in this order: top right, top left, bottom left, bottom right
-            temp_rect[0] = pts[1][0] # Top left
-            temp_rect[1] = pts[0][0] # Top right
-            temp_rect[2] = pts[3][0] # Bottom right
-            temp_rect[3] = pts[2][0] # Bottom left
-
-        # If furthest left point is lower than furthest right point,
-        # card is tilted to the right
-        if pts[1][0][1] > pts[3][0][1]:
-            # If card is titled to the right, approxPolyDP returns points
-            # in this order: top left, bottom left, bottom right, top right
-            temp_rect[0] = pts[0][0] # Top left
-            temp_rect[1] = pts[3][0] # Top right
-            temp_rect[2] = pts[2][0] # Bottom right
-            temp_rect[3] = pts[1][0] # Bottom left
-
-    # draw the name of the corner on the image
-    cv2.putText(image, f"top left", (int(temp_rect[0][0]), int(temp_rect[0][1])), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"bottom left", (int(temp_rect[1][0]), int(temp_rect[1][1])), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"bottom right", (int(temp_rect[2][0]), int(temp_rect[2][1])), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"top right", (int(temp_rect[3][0]), int(temp_rect[3][1])), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
-
-    # print(f"temp_rect: {temp_rect}")
-    
-            
-    maxWidth = 310
-    maxHeight = 500
-
-    # Create destination array, calculate perspective transform matrix,
-    # and warp card image
-    dst = np.array([[0,0],[maxWidth-1,0],[maxWidth-1,maxHeight-1],[0, maxHeight-1]], np.float32)
-    M = cv2.getPerspectiveTransform(temp_rect,dst)
-    warp = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
-
-    return warp, image
-
-def flatten3(image, pts, w, h):
-    """Flattens an image of a card into a top-down 200x300 perspective.
-    Returns the flattened, re-sized, grayed image.
-    See www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/"""
-    temp_rect = np.zeros((4,2), dtype = "float32")
-
-    # if len(pts) != 4:
-    #     print(f"Points: {pts}")
-    
-    s = np.sum(pts, axis = 2)
-
-    tl = pts[np.argmin(s)]
-    br = pts[np.argmax(s)]
-
-    diff = np.diff(pts, axis = -1)
-    tr = pts[np.argmin(diff)]
-    bl = pts[np.argmax(diff)]
-
-    # Need to create an array listing points in order of
-    # [top left, top right, bottom right, bottom left]
-    # before doing the perspective transform
-
-    if w <= 0.8*h: # If card is vertically oriented
-        temp_rect[0] = tl
-        temp_rect[1] = tr
-        temp_rect[2] = br
-        temp_rect[3] = bl
-
-    if w >= 1.2*h: # If card is horizontally oriented
-        temp_rect[0] = bl
-        temp_rect[1] = tl
-        temp_rect[2] = tr
-        temp_rect[3] = br
-
-    # If the card is 'diamond' oriented, a different algorithm
-    # has to be used to identify which point is top left, top right
-    # bottom left, and bottom right.
-    
-    if w > 0.8*h and w < 1.2*h: #If card is diamond oriented
-        # If furthest left point is higher than furthest right point,
-        # card is tilted to the left.
-        if pts[1][0][1] <= pts[3][0][1]:
-            # If card is titled to the left, approxPolyDP returns points
-            # in this order: top right, top left, bottom left, bottom right
-            temp_rect[0] = pts[1][0] # Top left
-            temp_rect[1] = pts[0][0] # Top right
-            temp_rect[2] = pts[3][0] # Bottom right
-            temp_rect[3] = pts[2][0] # Bottom left
-
-        # If furthest left point is lower than furthest right point,
-        # card is tilted to the right
-        if pts[1][0][1] > pts[3][0][1]:
-            # If card is titled to the right, approxPolyDP returns points
-            # in this order: top left, bottom left, bottom right, top right
-            temp_rect[0] = pts[0][0] # Top left
-            temp_rect[1] = pts[3][0] # Top right
-            temp_rect[2] = pts[2][0] # Bottom right
-            temp_rect[3] = pts[1][0] # Bottom left
-
-    # draw the name of the corner on the image
-    cv2.putText(image, f"top left", (int(temp_rect[0][0]), int(temp_rect[0][1])), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"top right", (int(temp_rect[1][0]), int(temp_rect[1][1])), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"bottom right", (int(temp_rect[2][0]), int(temp_rect[2][1])), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"bottom left", (int(temp_rect[3][0]), int(temp_rect[3][1])), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    
-    maxWidth = 310
-    maxHeight = 500
-
-    # Create destination array, calculate perspective transform matrix,
-    # and warp card image
-    dst = np.array([[0,0],[maxWidth-1,0],[maxWidth-1,maxHeight-1],[0, maxHeight-1]], np.float32)
-    M = cv2.getPerspectiveTransform(temp_rect,dst)
-    warp = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
-    # warp = cv2.cvtColor(warp,cv2.COLOR_BGR2GRAY)
 
     return warp, image
 
