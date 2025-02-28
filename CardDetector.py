@@ -17,7 +17,7 @@ CARD_HISTORY = 5
 font = cv2.FONT_HERSHEY_SIMPLEX
 
 global video_path
-video_path = "media/test_vid_4.mov"
+video_path = "media/test_vid_4_short.mov"
 global videostream
 videostream = VideoStream.VideoStream(video_path).start()
 
@@ -88,7 +88,7 @@ def main():
         frame_time = time.time() - frame_start_time
         frame_times.append(frame_time)
 
-        # time.sleep(0.25)
+        time.sleep(5)
 
     total_time_taken = time.time() - start_time
     average_frame_time = sum(frame_times) / len(frame_times)
