@@ -17,7 +17,7 @@ CARD_HISTORY = 5
 font = cv2.FONT_HERSHEY_SIMPLEX
 
 global video_path
-video_path = "media/test_vid_4.mov"
+video_path = "media/test_vid_7.mov"
 global videostream
 videostream = VideoStream.VideoStream(video_path).start()
 
@@ -50,7 +50,7 @@ def main():
         pre_proc, prev_edges = preprocess_frame(frame, prev_edges)
         end_preprocess_time = time.time()
         preprocess_time.append(end_preprocess_time - start_preprocess_time)
-        # print(f"Preprocessing time: {preprocess_time:.4f} seconds")
+        # print(f"Preprocessing time: {preprocess_time} seconds")
         # cv2.imshow("Preprocessed", pre_proc)
 
         detection_start_time = time.time()
@@ -82,8 +82,8 @@ def main():
             if len(cards) != 0:
                 tmp_cnts = []
                 for i, card in enumerate(cards):
-                    if card.debug_view is not None:
-                        cv2.imshow(f"Card: {i}", card.debug_view)
+                    # if card.debug_view is not None:
+                    #     cv2.imshow(f"Card: {i}", card.debug_view)
                     # cv2.imshow(f"Card: {i}", card.warp)
                     tmp_cnts.append(card.contour)
                 cv2.drawContours(frame, tmp_cnts, -1, (255,0,0), 2)
@@ -221,12 +221,9 @@ def find_cards(frame, og_frame):
     for i in range(len(cnts_sort)):
         size = cv2.contourArea(cnts_sort[i])
         peri = cv2.arcLength(cnts_sort[i], True)
-        # approx = cv2.approxPolyDP(cnts_sort[i], 0.01 * peri, True)
-        
-        # if ((size < CARD_MAX_AREA) and (size > CARD_MIN_AREA)
-        #     and (hier_sort[i][3] == -1) and (len(approx) == 4)):
-        #     cnt_is_card[i] = 1
-        if ((size > CARD_MIN_AREA) and (hier_sort[i][3] == -1)):
+        approx = cv2.approxPolyDP(cnts_sort[i], 0.01 * peri, True)
+
+        if ((size > CARD_MIN_AREA) and (hier_sort[i][3] == -1) and (4 <= len(approx) <= 6)):
             cnt_is_card[i] = 1
 
     # draw contours of all cards on frame
