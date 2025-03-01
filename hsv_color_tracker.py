@@ -28,7 +28,7 @@ cv2.createTrackbar("Lower H", "Trackbars", 0, 179, nothing)
 cv2.createTrackbar("Lower S", "Trackbars", 34, 255, nothing)
 cv2.createTrackbar("Lower V", "Trackbars", 46, 255, nothing)
 cv2.createTrackbar("Upper H", "Trackbars", 15, 179, nothing)
-cv2.createTrackbar("Upper S", "Trackbars", 109, 255, nothing)
+cv2.createTrackbar("Upper S", "Trackbars", 170, 255, nothing) # used to be 109
 cv2.createTrackbar("Upper V", "Trackbars", 200, 255, nothing)
 
 # GREEN
