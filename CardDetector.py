@@ -17,7 +17,7 @@ CARD_HISTORY = 5
 font = cv2.FONT_HERSHEY_SIMPLEX
 
 global video_path
-video_path = "media/test_circle.mov"
+video_path = "media/test_triangle.mov"
 global videostream
 videostream = VideoStream.VideoStream(video_path).start()
 
@@ -70,16 +70,25 @@ def main():
             for i in range(len(cnts_sort)):
                 if cnt_is_card[i] == 1:
                     cards.append(Cards.preprocess_card(cnts_sort[i], frame))
-
+                    frame = draw_results(frame, cards[k])
 
             for_1_times.append(time.time() - for_1_time)
 
-        for i, card in enumerate(cards):
-            if card.debug_view is not None:
-                cv2.imshow(f"Card: {i}", card.debug_view)
+            # draw all the card contours together
+            if len(cards) != 0:
+                tmp_cnts = []
+                for i, card in enumerate(cards):
+                    # cv2.imshow(f"Card: {i}", card.debug_view)
+                    # cv2.imshow(f"Card: {i}", card.warp)
+                    tmp_cnts.append(card.contour)
+                cv2.drawContours(frame, tmp_cnts, -1, (255,0,0), 2)
+
+        # for i, card in enumerate(cards):
+        #     if card.debug_view is not None:
+        #         cv2.imshow(f"Card: {i}", card.debug_view)
         
         # Show the video feed
-        # cv2.imshow("Live Feed", frame)
+        cv2.imshow("Live Feed", frame)
 
         key = cv2.waitKey(1) & 0xFF
         if key == ord("q"):
