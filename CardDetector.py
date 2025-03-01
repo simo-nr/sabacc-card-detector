@@ -17,7 +17,7 @@ CARD_HISTORY = 5
 font = cv2.FONT_HERSHEY_SIMPLEX
 
 global video_path
-video_path = "media/test_vid_6.mov"
+video_path = "media/test_square.mov"
 global videostream
 videostream = VideoStream.VideoStream(video_path).start()
 
@@ -144,7 +144,9 @@ def main():
     videostream.stop()
 
 def preprocess_frame(frame, previous_edges=None):
-    """Preprocess the frame by applying Gaussian blur, Canny edge detection, and thresholding."""
+    """
+    Preprocess the frame by applying Gaussian blur, Canny edge detection, and thresholding.
+    """
     # Step 1: Apply Gaussian Blur and convert to grayscale
     blurred = cv2.GaussianBlur(frame, (5, 5), 0)
     gray = cv2.cvtColor(blurred, cv2.COLOR_BGR2GRAY)
@@ -163,10 +165,9 @@ def preprocess_frame(frame, previous_edges=None):
 
     if TEMP_SMOOTHING:
         if previous_edges is None:
-            previous_edges = np.zeros((1, 1))
+            previous_edges = edges.copy()
         alpha = 0.5  # Adjust for smoother or sharper edges
         edges = cv2.addWeighted(previous_edges, alpha, edges, 1 - alpha, 0)
-        # prev_prev_edges = previous_edges.copy()  # Update for the next frame
         previous_edges = edges.copy()  # Update for the next frame
     
     # Step 3: Apply Thresholding
@@ -186,16 +187,15 @@ def preprocess_frame(frame, previous_edges=None):
     return filtered, edges
 
 def find_cards(frame, og_frame):
-    # TODO better detection if something is shaped like a card
     # Find contours in the tresholded image
     contours, hierarchy = cv2.findContours(frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     # If there are no contours, do nothing
     if len(contours) == 0:
         return [], []
     
-    # draw contours on frame
-    all_cont_frame = og_frame.copy()
-    cv2.drawContours(all_cont_frame, contours, -1, (0, 255, 0), 2)
+    # # draw contours on frame
+    # all_cont_frame = og_frame.copy()
+    # cv2.drawContours(all_cont_frame, contours, -1, (0, 255, 0), 2)
     # cv2.imshow("All contours", all_cont_frame)
 
     # sort contour indices by contour size
@@ -226,9 +226,9 @@ def find_cards(frame, og_frame):
         if ((size > CARD_MIN_AREA) and (hier_sort[i][3] == -1) and (4 <= len(approx) <= 6)):
             cnt_is_card[i] = 1
 
-    # draw contours of all cards on frame
-    card_cont_frame = og_frame.copy()
-    cv2.drawContours(card_cont_frame, [cnts_sort[i] for i in range(len(cnts_sort)) if cnt_is_card[i] == 1], -1, (255,0,0), 2)
+    # # draw contours of all cards on frame
+    # card_cont_frame = og_frame.copy()
+    # cv2.drawContours(card_cont_frame, [cnts_sort[i] for i in range(len(cnts_sort)) if cnt_is_card[i] == 1], -1, (255,0,0), 2)
     # cv2.imshow("Card contours", card_cont_frame)
 
     # TODO: simplify this so cnt_is_card isnt returned
