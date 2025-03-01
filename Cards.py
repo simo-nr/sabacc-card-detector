@@ -201,15 +201,13 @@ def get_rank_and_suit(card: Card) -> Tuple[str, str]:
         """
 
         # Approximate the contour
-        # approx = cv2.approxPolyDP(contour, 0.04 * peri, True)
-        approx = cv2.approxPolyDP(contour, 10, True)
+        approx = cv2.approxPolyDP(contour, 0.05 * peri, True)
+        # approx = cv2.approxPolyDP(contour, 10, True)
 
         # Draw the approximated polygon
         colour = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
         cv2.polylines(colour, [approx], True, (0, 255, 255), 2)  # Yellow for approximation
         cv2.imshow(f"Debug View:", colour)
-
-        # print(is_circle(contour))
 
         # Count the number of vertices
         vertices = len(approx)
@@ -217,15 +215,12 @@ def get_rank_and_suit(card: Card) -> Tuple[str, str]:
         # Detect shape based on vertices
         if vertices == 3:
             shape = "Triangle"
-            # print("Triangle perimeter:", peri)
         elif vertices == 4:
-            x, y, w, h = cv2.boundingRect(approx)
-            aspect_ratio = float(w) / h
-            # print("Rectangle perimeter:", peri)
-            if 0.85 <= aspect_ratio <= 1.15:
-                shape = "Square"
+            approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
+            if len(approx) >= 8:
+                shape = "Circle"
             else:
-                shape = "Rectangle" # in case of weird stuff
+                shape = "Square"
         else:
             # Detect circle by comparing area and perimeter
             # print("Circle perimeter:", peri)
