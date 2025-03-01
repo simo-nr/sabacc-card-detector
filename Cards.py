@@ -13,7 +13,6 @@ class Card:
 
     def __init__(self):
         self.contour = [] # Contour of card
-        self.width, self.height = 0, 0 # Width and height of card
         self.corner_pts = [] # Corner points of card
         self.center = [] # Center point of card
         self.warp = [] # 310x500, flattened, grayed, blurred image
@@ -78,10 +77,6 @@ def preprocess_card(contour, image):
         card.debug_view = None
         return card
 
-    # Find width and height of card's bounding rectangle
-    x, y, w, h = cv2.boundingRect(contour)
-    card.width, card.height = w, h
-
     # Find center point of card by taking x and y average of the four corners.
     average = np.sum(pts, axis=0) / len(pts)
     cent_x = int(average[0][0])
@@ -90,7 +85,7 @@ def preprocess_card(contour, image):
 
     mod_image = image.copy()
     # Warp card into 310x500 flattened image using perspective transform
-    card.warp, mod_image = flatten(mod_image, pts, w, h)
+    card.warp, mod_image = flatten(mod_image, pts)
 
     card.sign = get_sign(card)
     card.rank, card.suit = get_rank_and_suit(card)
@@ -180,7 +175,6 @@ def get_rank_and_suit(card: Card) -> Tuple[str, str]:
         if cv2.contourArea(contour) > 1000:
             actual_contours.append(contour)
 
-    # print(f"Biggest contour: {biggest_contour}")
     num_shapes = len(actual_contours)
     
     cv2.drawContours(image_with_contours, actual_contours, -1, (0, 255, 0), 2)
@@ -223,7 +217,6 @@ def get_rank_and_suit(card: Card) -> Tuple[str, str]:
                 shape = "Square"
         else:
             # Detect circle by comparing area and perimeter
-            # print("Circle perimeter:", peri)
             area = cv2.contourArea(contour)
             if area == 0:
                 continue
@@ -261,7 +254,7 @@ def get_sign(card: Card) -> str:
 
     return "Positive" if pixels_green > pixels_red else "Negative"
 
-def flatten(image, pts, w, h):
+def flatten(image, pts):
     """
     Flattens an image of a card into a top-down 310x500 perspective.
     Returns the flattened, re-sized image.

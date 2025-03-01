@@ -25,7 +25,7 @@ class VideoStream:
         self.stopped = False
 
     def start(self):
-	# Start the thread to read frames from the video stream
+	    # Start the thread to read frames from the video stream
         Thread(target=self.update,args=()).start()
         return self
     
