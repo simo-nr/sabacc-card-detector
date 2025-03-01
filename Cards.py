@@ -172,11 +172,12 @@ def get_rank_and_suit(card: Card) -> Tuple[str, str]:
     actual_contours: List = []
     biggest_area: int = 0
     for contour in contours:
-        if cv2.contourArea(contour) > biggest_area:
+        area = cv2.contourArea(contour)
+        if area > biggest_area:
             biggest_area = cv2.contourArea(contour)
             biggest_contour = contour
         # check if area of contour is big enough to be distinct shape
-        if cv2.contourArea(contour) > 1000:
+        if area > 1000:
             actual_contours.append(contour)
 
     num_shapes = len(actual_contours)
@@ -199,7 +200,7 @@ def get_rank_and_suit(card: Card) -> Tuple[str, str]:
         """
 
         # Approximate the contour
-        approx = cv2.approxPolyDP(contour, 0.05 * peri, True)
+        approx = cv2.approxPolyDP(contour, 0.04 * peri, True)
         # approx = cv2.approxPolyDP(contour, 10, True)
 
         # Draw the approximated polygon
@@ -210,28 +211,53 @@ def get_rank_and_suit(card: Card) -> Tuple[str, str]:
         # Count the number of vertices
         vertices = len(approx)
 
+        # # Detect shape based on vertices
+        # if vertices == 3:
+        #     shape = "Triangle"
+        # elif vertices == 4:
+        #     approx = cv2.approxPolyDP(biggest_contour, 0.03 * peri, True)
+        #     longest_edge = find_longest_edges(approx, 1)[0]
+        #     p1, p2 = longest_edge
+        #     length = calculate_distance(p1, p2)
+        #     # print("length: ", length)
+
+        #     # cv2.polylines(colour, [approx], True, (0, 255, 255), 2)  # Yellow for approximation
+        #     # # draw longest edge
+        #     # cv2.line(colour, p1, p2, (0, 0, 255), 2)
+        #     # cv2.imshow(f"Debug View:", colour)
+
+        #     if length >= 25: # might be cutting it close, would prefer 30 (currently 0.03 * peri approx)
+        #         shape = "Square"
+        #     else:
+        #         if card.sign == "Negative":
+        #             print("length: ", length)
+        #         cv2.imwrite(f"junk_stuff/{length}_{int(time.time())}_approx.png", colour)
+        #         shape = "Circle"
+        # else:
+        #     # Detect circle by comparing area and perimeter
+        #     area = cv2.contourArea(contour)
+        #     if area == 0:
+        #         continue
+        #     circularity = 4 * np.pi * (area / (peri * peri))
+        #     if 0.8 <= circularity <= 1.2:  # Circularity close to 1
+        #         if card.sign == "Negative":
+        #             print("circularity: ", circularity)
+        #         shape = "Circle"
+        #     else:
+        #         shape = "Unknown"
+
         # Detect shape based on vertices
         if vertices == 3:
             shape = "Triangle"
         elif vertices == 4:
-            approx = cv2.approxPolyDP(biggest_contour, 0.03 * peri, True)
-            longest_edge = find_longest_edges(approx, 1)[0]
-            p1, p2 = longest_edge
-            length = calculate_distance(p1, p2)
-            # print("length: ", length)
-
-            # cv2.polylines(colour, [approx], True, (0, 255, 255), 2)  # Yellow for approximation
-            # # draw longest edge
-            # cv2.line(colour, p1, p2, (0, 0, 255), 2)
-            # cv2.imshow(f"Debug View:", colour)
-
-            if length >= 25: # might be cutting it close, would prefer 30 (currently 0.03 * peri approx)
-                shape = "Square"
-            else:
-                if card.sign == "Negative":
-                    print("length: ", length)
-                cv2.imwrite(f"junk_stuff/{length}_{int(time.time())}_approx.png", colour)
-                shape = "Circle"
+            # Further check if it's square or rectangle
+            # x, y, w, h = cv2.boundingRect(approx)
+            # aspect_ratio = float(w) / h
+            # if 0.9 <= aspect_ratio <= 1.1:  # Almost square
+            #     shape = "Square"
+            # else:
+            #     shape = "Rectangle"  # Not needed for your specific case
+            shape = "Square"
         else:
             # Detect circle by comparing area and perimeter
             area = cv2.contourArea(contour)
@@ -239,8 +265,6 @@ def get_rank_and_suit(card: Card) -> Tuple[str, str]:
                 continue
             circularity = 4 * np.pi * (area / (peri * peri))
             if 0.8 <= circularity <= 1.2:  # Circularity close to 1
-                if card.sign == "Negative":
-                    print("circularity: ", circularity)
                 shape = "Circle"
             else:
                 shape = "Unknown"
