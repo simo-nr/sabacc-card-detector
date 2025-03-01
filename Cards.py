@@ -23,38 +23,7 @@ class Card:
 
 
 def calculate_distance(point1, point2):
-    # return math.sqrt((point2[0][0] - point1[0][0])**2 + (point2[0][1] - point1[0][1])**2)
     return math.sqrt((point2[0] - point1[0])**2 + (point2[1] - point1[1])**2)
-
-def get_orientation(p1, p2):
-    """Returns orientation of p2 relative to p1."""
-    # dx = abs(p1[0][0] - p2[0][0])  # Horizontal distance
-    # dy = abs(p1[0][1] - p2[0][1])  # Vertical distance
-
-    # if dy > dx:
-    #     if p1[0][1] < p2[0][1]:
-    #         return "above"
-    #     else:
-    #         return "below"
-    # else:
-    #     if p1[0][0] < p2[0][0]:
-    #         return "left"
-    #     else:
-    #         return "right"
-    dx = abs(p1[0] - p2[0])  # Horizontal distance
-    dy = abs(p1[1] - p2[1])  # Vertical distance
-
-    if dy > dx:
-        if p1[1] < p2[1]:
-            return "above"
-        else:
-            return "below"
-    else:
-        if p1[0] < p2[0]:
-            return "left"
-        else:
-            return "right"
-
 
 def preprocess_card(contour, image):
     """Uses contour to find information about the query card. Isolates rank
@@ -71,21 +40,9 @@ def preprocess_card(contour, image):
     approx = cv2.approxPolyDP(contour, 0.003 * peri, True)
     pts = np.float32(approx)
     card.corner_pts = pts
-    # print(f"Points: {pts}")
-
-    # draw approx on image
-    # cv2.polylines(image, [approx], True, (0, 255, 0), 2)
-    # print(len(pts))
 
     # find 4 longest lines in approx
     longest_edges = find_longest_edges(approx, 4)
-
-    # # copy image for debugging
-    # approx_image = image.copy()
-    # # draw the 4 longest lines on the image
-    # for edge in longest_edges:
-    #     cv2.line(approx_image, edge[0], edge[1], (0, 100, 255), 2)
-    # cv2.imshow("Approx", approx_image)
 
     # extend the lines
     extended_lines = []
@@ -108,20 +65,6 @@ def preprocess_card(contour, image):
             except:
                 print(f"Line 1: Point 1: {pt1}, Point 2: {pt2}, Slope: {round(m1, 2)}, Intercept: {round(b1, 2)}")
                 print(f"Line 2: Point 3: {pt3}, Point 4: {pt4}, Slope: {round(m2, 2)}, Intercept: {round(b2, 2)}")
-                intersection = None
-            # if intersection is not None:
-                # cv2.circle(image, intersection, 9, (0, 255, 0), -1)
-                # print(intersection)
-
-    # draw the card corners on the image
-    # if len(pts) == 4:
-
-    # for intersection in intersections:
-    #     if intersection[0] is not None:
-    #         if intersection[0][0] < 0 or intersection[0][1] < 0 or intersection[0][0] > 1920 or intersection[0][1] > 1080:
-    #             intersections.remove(intersection)
-    #     else:
-    #         intersections.remove(intersection)
 
     intersections = [pt for pt in intersections if pt[0] is not None and 
                  0 <= pt[0][0] <= 1920 and 0 <= pt[0][1] <= 1080]
@@ -134,39 +77,6 @@ def preprocess_card(contour, image):
         print(f"\033[93mIntersections: \n{pts}\033[0m")
         card.debug_view = None
         return card
-
-
-    ##################### DEBUG #####################
-    p1 = (int(pts[0][0][0]), int(pts[0][0][1]))
-    p2 = (int(pts[1][0][0]), int(pts[1][0][1]))
-    p3 = (int(pts[2][0][0]), int(pts[2][0][1]))
-    p4 = (int(pts[3][0][0]), int(pts[3][0][1]))
-
-    sum_loc_p1 = (int(pts[0][0][0]), int(pts[0][0][1]) - 20)
-    sum_loc_p2 = (int(pts[1][0][0]), int(pts[1][0][1]) - 20)
-    sum_loc_p3 = (int(pts[2][0][0]), int(pts[2][0][1]) - 20)
-    sum_loc_p4 = (int(pts[3][0][0]), int(pts[3][0][1]) - 20)
-
-    cv2.circle(image, p1, 9, (0, 0, 255), -1)
-    cv2.circle(image, p2, 9, (0, 255, 255), -1)
-    cv2.circle(image, p3, 9, (255, 0, 255), -1)
-    cv2.circle(image, p4, 9, (0, 255, 0), -1)
-
-    sum_p1 = np.sum(p1)
-    sum_p2 = np.sum(p2)
-    sum_p3 = np.sum(p3)
-    sum_p4 = np.sum(p4)
-
-    cv2.putText(image, f"{p1}", p1, font, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"{p2}", p2, font, 1, (0, 255, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"{p3}", p3, font, 1, (255, 0, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"{p4}", p4, font, 1, (0, 255, 0), 2, cv2.LINE_AA)
-
-    cv2.putText(image, f"{sum_p1}", sum_loc_p1, font, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"{sum_p2}", sum_loc_p2, font, 1, (0, 255, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"{sum_p3}", sum_loc_p3, font, 1, (255, 0, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"{sum_p4}", sum_loc_p4, font, 1, (0, 255, 0), 2, cv2.LINE_AA)
-    ################## END OF DEBUG ##################
 
     # Find width and height of card's bounding rectangle
     x, y, w, h = cv2.boundingRect(contour)
@@ -181,18 +91,48 @@ def preprocess_card(contour, image):
     # Warp card into 310x500 flattened image using perspective transform
     card.warp, mod_image = flatten(image, pts, w, h)
 
-    cv2.imshow("mod by flat", mod_image)
-    # cv2.imshow("Warp", card.warp)
-
     card.sign = get_sign(card)
-
     card.rank, card.suit = get_rank_and_suit(card)
+
+    ##################### DEBUG #####################
+    p1 = (int(pts[0][0][0]), int(pts[0][0][1]))
+    p2 = (int(pts[1][0][0]), int(pts[1][0][1]))
+    p3 = (int(pts[2][0][0]), int(pts[2][0][1]))
+    p4 = (int(pts[3][0][0]), int(pts[3][0][1]))
+
+    sum_loc_p1 = (int(pts[0][0][0]), int(pts[0][0][1]) - 20)
+    sum_loc_p2 = (int(pts[1][0][0]), int(pts[1][0][1]) - 20)
+    sum_loc_p3 = (int(pts[2][0][0]), int(pts[2][0][1]) - 20)
+    sum_loc_p4 = (int(pts[3][0][0]), int(pts[3][0][1]) - 20)
+
+    cv2.circle(mod_image, p1, 9, (0, 0, 255), -1)
+    cv2.circle(mod_image, p2, 9, (0, 255, 255), -1)
+    cv2.circle(mod_image, p3, 9, (255, 0, 255), -1)
+    cv2.circle(mod_image, p4, 9, (0, 255, 0), -1)
+
+    sum_p1 = np.sum(p1)
+    sum_p2 = np.sum(p2)
+    sum_p3 = np.sum(p3)
+    sum_p4 = np.sum(p4)
+
+    cv2.putText(mod_image, f"{p1}", p1, font, 1, (0, 0, 255), 2, cv2.LINE_AA)
+    cv2.putText(mod_image, f"{p2}", p2, font, 1, (0, 255, 255), 2, cv2.LINE_AA)
+    cv2.putText(mod_image, f"{p3}", p3, font, 1, (255, 0, 255), 2, cv2.LINE_AA)
+    cv2.putText(mod_image, f"{p4}", p4, font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+
+    cv2.putText(mod_image, f"{sum_p1}", sum_loc_p1, font, 1, (0, 0, 255), 2, cv2.LINE_AA)
+    cv2.putText(mod_image, f"{sum_p2}", sum_loc_p2, font, 1, (0, 255, 255), 2, cv2.LINE_AA)
+    cv2.putText(mod_image, f"{sum_p3}", sum_loc_p3, font, 1, (255, 0, 255), 2, cv2.LINE_AA)
+    cv2.putText(mod_image, f"{sum_p4}", sum_loc_p4, font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+
+    cv2.imshow("mod by flat", mod_image)
 
     # Place the sign of the card on top of the debug view
     card.debug_view = card.warp.copy()
     cv2.putText(card.debug_view, card.sign, (10, 30), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
     cv2.putText(card.debug_view, card.rank, (10, 60), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
     cv2.putText(card.debug_view, card.suit, (10, 90), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+    ################## END OF DEBUG ##################
 
     return card
 
@@ -341,6 +281,34 @@ def get_rank_and_suit(card):
 
     return str(num_shapes), shape
 
+def get_sign(card):
+    """Determines the sign of the card based on overall color, 
+    green for positive, red for negative"""
+
+    # hue saturation value
+    # lower_hsv_red = np.array([0, 34, 46])
+    # upper_hsv_red = np.array([15, 109, 200])
+    lower_hsv_red = np.array([0, 34, 46])
+    upper_hsv_red = np.array([15, 170, 200])
+
+    lower_hsv_green = np.array([32, 12, 12])
+    upper_hsv_green = np.array([82, 162, 200])
+
+    hsv = cv2.cvtColor(card.warp, cv2.COLOR_BGR2HSV)
+
+    mask_red = cv2.inRange(hsv, lower_hsv_red, upper_hsv_red)
+    mask_green = cv2.inRange(hsv, lower_hsv_green, upper_hsv_green)
+
+
+    pixels_red = cv2.countNonZero(mask_red)
+    pixels_green = cv2.countNonZero(mask_green)
+
+    if pixels_red > pixels_green:
+        cv2.imshow("Red Mask", mask_red)
+        cv2.imshow("Green Mask", mask_green)
+
+    return "Positive" if pixels_green > pixels_red else "Negative"
+
 def flatten(image, pts, w, h):
     """
     Flattens an image of a card into a top-down 310x500 perspective.
@@ -381,12 +349,6 @@ def flatten(image, pts, w, h):
     temp_rect[2] = br
     temp_rect[3] = bl
 
-    # draw the name of the corner on the image
-    cv2.putText(image, f"top left", (int(temp_rect[0][0]), int(temp_rect[0][1]) + 20), font, 1, (0, 255, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"top right", (int(temp_rect[1][0]), int(temp_rect[1][1]) + 20), font, 1, (255, 0, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"bottom right", (int(temp_rect[2][0]), int(temp_rect[2][1]) + 20), font, 1, (0, 255, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"bottom left", (int(temp_rect[3][0]), int(temp_rect[3][1]) + 20), font, 1, (255, 0, 0), 2, cv2.LINE_AA)
-
     # draw points from temp_rect on image
     for point in temp_rect:
         x, y = point
@@ -401,30 +363,12 @@ def flatten(image, pts, w, h):
     M = cv2.getPerspectiveTransform(temp_rect, dst)
     warp = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
 
+    # draw the name of the corner on the image
+    cv2.putText(image, f"top left", (int(temp_rect[0][0]), int(temp_rect[0][1]) + 20), font, 1, (0, 255, 255), 2, cv2.LINE_AA)
+    cv2.putText(image, f"top right", (int(temp_rect[1][0]), int(temp_rect[1][1]) + 20), font, 1, (255, 0, 255), 2, cv2.LINE_AA)
+    cv2.putText(image, f"bottom right", (int(temp_rect[2][0]), int(temp_rect[2][1]) + 20), font, 1, (0, 255, 255), 2, cv2.LINE_AA)
+    cv2.putText(image, f"bottom left", (int(temp_rect[3][0]), int(temp_rect[3][1]) + 20), font, 1, (255, 0, 0), 2, cv2.LINE_AA)
+    
     return warp, image
-
-def get_sign(card):
-    """Determines the sign of the card based on overall color, 
-    green for positive, red for negative"""
-
-    # hue saturation value
-    lower_hsv_red = np.array([0, 34, 46])
-    upper_hsv_red = np.array([15, 109, 200])
-
-    lower_hsv_green = np.array([32, 12, 12])
-    upper_hsv_green = np.array([82, 162, 200])
-
-    hsv = cv2.cvtColor(card.warp, cv2.COLOR_BGR2HSV)
-
-    mask_red = cv2.inRange(hsv, lower_hsv_red, upper_hsv_red)
-    mask_green = cv2.inRange(hsv, lower_hsv_green, upper_hsv_green)
-
-    # cv2.imshow("Red Mask", mask_red)
-    # cv2.imshow("Green Mask", mask_green)
-
-    pixels_red = cv2.countNonZero(mask_red)
-    pixels_green = cv2.countNonZero(mask_green)
-
-    return "Positive" if pixels_green > pixels_red else "Negative"
 
 
