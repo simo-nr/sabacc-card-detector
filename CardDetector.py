@@ -17,7 +17,7 @@ CARD_HISTORY = 5
 font = cv2.FONT_HERSHEY_SIMPLEX
 
 global video_path
-video_path = "media/test_vid_7.mov"
+video_path = "media/test_vid_6.mov"
 global videostream
 videostream = VideoStream.VideoStream(video_path).start()
 
@@ -103,7 +103,7 @@ def main():
         frame_time = time.time() - frame_start_time
         frame_times.append(frame_time)
 
-        # time.sleep(0.03)
+        time.sleep(0.03)
 
     total_time_taken = time.time() - start_time
     average_frame_time = sum(frame_times) / len(frame_times)
@@ -231,7 +231,6 @@ def find_cards(frame, og_frame):
     cv2.drawContours(card_cont_frame, [cnts_sort[i] for i in range(len(cnts_sort)) if cnt_is_card[i] == 1], -1, (255,0,0), 2)
     # cv2.imshow("Card contours", card_cont_frame)
 
-    # TODO: remove frame from return
     # TODO: simplify this so cnt_is_card isnt returned
     return cnts_sort, cnt_is_card
 
@@ -259,7 +258,4 @@ def draw_results(frame, card):
     return frame
 
 if __name__ == "__main__":
-    # for i in range(4):
-    #     video_path = f"media/test_vid_{i+1}.mov"
-    #     videostream = VideoStream.VideoStream(video_path).start()
     main()
