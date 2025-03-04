@@ -44,53 +44,12 @@ def main():
         if frame is None:
             print("End of video")
             break
+
+        ##### MAIN PROCESSING #####
         
-        # Preprocess the frame (gray, blur, and threshold it)
-        start_preprocess_time = time.time()
-        pre_proc, prev_edges = preprocess_frame(frame, prev_edges)
-        end_preprocess_time = time.time()
-        preprocess_time.append(end_preprocess_time - start_preprocess_time)
-        # print(f"Preprocessing time: {preprocess_time} seconds")
-        # cv2.imshow("Preprocessed", pre_proc)
+        frame, prev_edges = detect_cards(frame, prev_edges)
 
-        detection_start_time = time.time()
-        # Find and sort contours of card in the frame
-        cnts_sort, cnt_is_card = find_cards(pre_proc, frame)
-        detection_end_time = time.time()
-        detection_times.append(detection_end_time - detection_start_time)
-
-        # Draw card contours on image if contour is card
-        # (have to do contours all at once or they do not show up properly for some reason)
-        cards = []
-        k = 0
-        if len(cnts_sort) != 0:
-
-            for_1_time = time.time()
-            for i in range(len(cnts_sort)):
-                if cnt_is_card[i] == 1:
-                    cards.append(Cards.preprocess_card(cnts_sort[i], frame))
-                    # print(f"Card {k}: {cards[k].sign} {cards[k].rank} of {cards[k].suit}")
-                    try:
-                        frame = draw_results(frame, cards[k])
-                    except:
-                        pass
-                    k += 1
-
-            for_1_times.append(time.time() - for_1_time)
-
-            # draw all the card contours together
-            if len(cards) != 0:
-                tmp_cnts = []
-                for i, card in enumerate(cards):
-                    # if card.debug_view is not None:
-                    #     cv2.imshow(f"Card: {i}", card.debug_view)
-                    # cv2.imshow(f"Card: {i}", card.warp)
-                    tmp_cnts.append(card.contour)
-                cv2.drawContours(frame, tmp_cnts, -1, (255,0,0), 2)
-
-        # for i, card in enumerate(cards):
-        #     if card.debug_view is not None:
-        #         cv2.imshow(f"Card: {i}", card.debug_view)
+        ##### END MAIN PROCESSING #####
         
         # Show the video feed
         cv2.imshow("Live Feed", frame)
@@ -103,45 +62,95 @@ def main():
         frame_time = time.time() - frame_start_time
         frame_times.append(frame_time)
 
-        time.sleep(0.03)
+        # time.sleep(0.03)
 
-    total_time_taken = time.time() - start_time
-    average_frame_time = sum(frame_times) / len(frame_times)
-    average_preprocess_time = sum(preprocess_time) / len(preprocess_time)
-    average_detection_time = sum(detection_times) / len(detection_times)
-    total_preprocess_time = sum(preprocess_time)
+    # total_time_taken = time.time() - start_time
+    # average_frame_time = sum(frame_times) / len(frame_times)
+    # average_preprocess_time = sum(preprocess_time) / len(preprocess_time)
+    # average_detection_time = sum(detection_times) / len(detection_times)
+    # total_preprocess_time = sum(preprocess_time)
 
-    percent_detection = average_detection_time / average_frame_time
-    percent_preprocess = average_preprocess_time / average_frame_time
+    # percent_detection = average_detection_time / average_frame_time
+    # percent_preprocess = average_preprocess_time / average_frame_time
 
-    average_for_1_time = sum(for_1_times) / len(for_1_times)
+    # average_for_1_time = sum(for_1_times) / len(for_1_times)
 
-    percent_for_1 = average_for_1_time / average_frame_time
+    # percent_for_1 = average_for_1_time / average_frame_time
 
-    print(f"\033[91mtime taken: {total_time_taken}\033[0m")
-    print(f"\033[91maverage frame time: {average_frame_time} seconds\033[0m")
-    print(f"\033[91maverage preprocess time: {average_preprocess_time} seconds\033[0m")
-    print(f"\033[91maverage card detection time: {average_detection_time} seconds\033[0m")
-    print(f"\033[91mtotal frames: {frame_counter}\033[0m")
-    print(f"\033[91mtotal processing time: {total_preprocess_time} seconds\033[0m")
+    # print(f"\033[91mtime taken: {total_time_taken}\033[0m")
+    # print(f"\033[91maverage frame time: {average_frame_time} seconds\033[0m")
+    # print(f"\033[91maverage preprocess time: {average_preprocess_time} seconds\033[0m")
+    # print(f"\033[91maverage card detection time: {average_detection_time} seconds\033[0m")
+    # print(f"\033[91mtotal frames: {frame_counter}\033[0m")
+    # print(f"\033[91mtotal processing time: {total_preprocess_time} seconds\033[0m")
 
-    print(f"\033[92mpercent preprocess time: {percent_preprocess}\033[0m")
-    print(f"\033[92mpercent detection time: {percent_detection}\033[0m")
+    # print(f"\033[92mpercent preprocess time: {percent_preprocess}\033[0m")
+    # print(f"\033[92mpercent detection time: {percent_detection}\033[0m")
 
-    print(f"\033[93maverage for_1 time: {average_for_1_time}\033[0m")
+    # print(f"\033[93maverage for_1 time: {average_for_1_time}\033[0m")
 
 
-    print(f"\033[92mpercent for 1: {percent_for_1}\033[0m")
+    # print(f"\033[92mpercent for 1: {percent_for_1}\033[0m")
 
-    total_percent = percent_preprocess + percent_detection + percent_for_1
-    print(f"\033[92mtotal percent: {total_percent}\033[0m")
+    # total_percent = percent_preprocess + percent_detection + percent_for_1
+    # print(f"\033[92mtotal percent: {total_percent}\033[0m")
 
-    average_fetch_time = sum(fetch_frame_times) / len(fetch_frame_times)
-    print(f"average fetch frame time: {average_fetch_time}")
-    print(f"percent fetch time: {average_fetch_time / average_frame_time}")
+    # average_fetch_time = sum(fetch_frame_times) / len(fetch_frame_times)
+    # print(f"average fetch frame time: {average_fetch_time}")
+    # print(f"percent fetch time: {average_fetch_time / average_frame_time}")
         
     cv2.destroyAllWindows()
     videostream.stop()
+
+def detect_cards(frame, prev_edges):
+    # Preprocess the frame (gray, blur, and threshold it)
+    # start_preprocess_time = time.time()
+    pre_proc, prev_edges = preprocess_frame(frame, prev_edges)
+    # end_preprocess_time = time.time()
+    # preprocess_time.append(end_preprocess_time - start_preprocess_time)
+    # print(f"Preprocessing time: {preprocess_time} seconds")
+    # cv2.imshow("Preprocessed", pre_proc)
+
+    # detection_start_time = time.time()
+    # Find and sort contours of card in the frame
+    cnts_sort, cnt_is_card = find_cards(pre_proc, frame)
+    # detection_end_time = time.time()
+    # detection_times.append(detection_end_time - detection_start_time)
+
+    # Draw card contours on image if contour is card
+    # (have to do contours all at once or they do not show up properly for some reason)
+    cards = []
+    k = 0
+    if len(cnts_sort) != 0:
+
+        # for_1_time = time.time()
+        for i in range(len(cnts_sort)):
+            if cnt_is_card[i] == 1:
+                cards.append(Cards.preprocess_card(cnts_sort[i], frame))
+                # print(f"Card {k}: {cards[k].sign} {cards[k].rank} of {cards[k].suit}")
+                try:
+                    frame = draw_results(frame, cards[k])
+                except:
+                    pass
+                k += 1
+
+        # for_1_times.append(time.time() - for_1_time)
+
+        # draw all the card contours together
+        if len(cards) != 0:
+            tmp_cnts = []
+            for i, card in enumerate(cards):
+                # if card.debug_view is not None:
+                #     cv2.imshow(f"Card: {i}", card.debug_view)
+                # cv2.imshow(f"Card: {i}", card.warp)
+                tmp_cnts.append(card.contour)
+            cv2.drawContours(frame, tmp_cnts, -1, (255,0,0), 2)
+
+    # for i, card in enumerate(cards):
+    #     if card.debug_view is not None:
+    #         cv2.imshow(f"Card: {i}", card.debug_view)
+    return frame, prev_edges
+
 
 def preprocess_frame(frame, previous_edges=None):
     """
