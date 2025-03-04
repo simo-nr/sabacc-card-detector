@@ -213,76 +213,73 @@ def get_rank_and_suit(card: Card) -> Tuple[str, str]:
         vertices = len(approx)
         
         ######## add triangle stuff
-
-        # SQUARE VS CIRCLE
-        pts_square = 0
-        pts_circle = 0
-        # number of vertices
-        if vertices == 4:
-            pts_square += 1
-        elif vertices > 4:
-            pts_circle += 1
-        
-        # circularity
-        area = cv2.contourArea(contour)
-        circularity = (4 * np.pi * area) / (peri * peri)
-        if 0.84 <= circularity <= 1.1:
-            pts_circle += 1
-        else:
-            pts_square += 1
-        
-        # perimeter
-        if peri < 170:
-            pts_circle += 1
-        else:
-            pts_square += 1
-        
-        # longest edge
-        approx = cv2.approxPolyDP(biggest_contour, 0.03 * peri, True)
-        longest_edge = find_longest_edges(approx, 1)[0]
-        p1, p2 = longest_edge
-        length = calculate_distance(p1, p2)
-        if length >= 30: # used to be 25 (0.03 * peri)
-            pts_square += 1
-        else:
-            pts_circle += 1
-
-        # hough circles
-        # blur and gray
-        img = cv2.medianBlur(gray, 5)
-        circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 20,
-                    param1=50 ,param2=25, minRadius=0, maxRadius=0)
-        if circles is not None:
-            pts_circle += 1
-            print("circles found")
-        else:
-            pts_square += 1
-            print("square")
-
-        # Detect shape based on vertices
         if vertices == 3:
             shape = "Triangle"
-        # elif vertices == 4:
-        #     # Further check if it's square or rectangle
-        #     # x, y, w, h = cv2.boundingRect(approx)
-        #     # aspect_ratio = float(w) / h
-        #     # if 0.9 <= aspect_ratio <= 1.1:  # Almost square
-        #     #     shape = "Square"
-        #     # else:
-        #     #     shape = "Rectangle"  # Not needed for your specific case
-        #     shape = "Square"
         else:
-            # Detect circle by comparing area and perimeter
-            area = cv2.contourArea(contour)
-            if area == 0:
-                continue
-            circularity = (4 * np.pi * area) / (peri ** 2)
-            # print("circularity: ", circularity)
-            if 0.84 <= circularity <= 1.1: 
-                shape = "Circle"
-                # print("wrong")
+            # SQUARE VS CIRCLE
+            pts_square = 0
+            pts_circle = 0
+
+            # number of vertices
+            if vertices == 4:
+                pts_square += 1
+            elif vertices > 4:
+                pts_circle += 1
+            
+            # hough circles
+            img = cv2.medianBlur(gray, 5)
+            circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 20,
+                        param1=80 ,param2=20, minRadius=0, maxRadius=0)
+            if circles is not None:
+                pts_circle += 1
             else:
-                shape = "Not a circle"
+                pts_square += 1
+
+            # circularity
+            area = cv2.contourArea(contour)
+            circularity = (4 * np.pi * area) / (peri * peri)
+            if 0.84 <= circularity <= 1.1:
+                pts_circle += 1
+            else:
+                pts_square += 1
+            
+            # perimeter
+            if peri < 170:
+                pts_circle += 1
+            else:
+                pts_square += 1
+            
+            # longest edge
+            approx = cv2.approxPolyDP(biggest_contour, 0.03 * peri, True)
+            longest_edge = find_longest_edges(approx, 1)[0]
+            p1, p2 = longest_edge
+            length = calculate_distance(p1, p2)
+            if length >= 30: # used to be 25 (0.03 * peri)
+                pts_square += 1
+            else:
+                pts_circle += 1
+
+            # number of edges with close approximation
+            approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
+            if len(approx) >= 8:
+                pts_circle += 1
+            else:
+                pts_square += 1
+
+            # min enclosing circle
+            (x, y), radius = cv2.minEnclosingCircle(contour)
+            circle_area = np.pi * (radius ** 2)
+
+            if area / circle_area > 0.8:  # Adjust threshold
+                pts_circle += 1
+            else:
+                pts_square += 1
+
+            # final decision
+            if pts_circle > pts_square:
+                shape = "Circle"
+            else:
+                shape = "Square"
 
     return str(num_shapes), shape
 
