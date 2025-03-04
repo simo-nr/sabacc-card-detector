@@ -190,6 +190,7 @@ def get_rank_and_suit(card: Card) -> Tuple[str, str]:
     shape = "Unknown"
     # Iterate through contours
     for contour in actual_contours:
+    # for contour in [biggest_contour]:
         # Calculate the perimeter of the contour
         peri = cv2.arcLength(contour, True)
         # print('peri:', peri)
@@ -269,7 +270,6 @@ def get_rank_and_suit(card: Card) -> Tuple[str, str]:
             # min enclosing circle
             (x, y), radius = cv2.minEnclosingCircle(contour)
             circle_area = np.pi * (radius ** 2)
-
             if area / circle_area > 0.8:  # Adjust threshold
                 pts_circle += 1
             else:

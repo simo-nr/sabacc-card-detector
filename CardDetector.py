@@ -17,7 +17,7 @@ CARD_HISTORY = 5
 font = cv2.FONT_HERSHEY_SIMPLEX
 
 global video_path
-video_path = "media/test_square.mov"
+video_path = "media/test_triangle.mov"
 global videostream
 videostream = VideoStream.VideoStream(video_path).start()
 
