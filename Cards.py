@@ -186,100 +186,95 @@ def get_rank_and_suit(card: Card) -> Tuple[str, str]:
 
     # cv2.imshow("Contours", image_with_contours)
 
-    # Determine suit
+    # Determine suit of biggest contour
     shape = "Unknown"
-    # Iterate through contours
-    for contour in actual_contours:
-    # for contour in [biggest_contour]:
-        # Calculate the perimeter of the contour
-        peri = cv2.arcLength(contour, True)
-        # print('peri:', peri)
+    # Calculate the perimeter of the contour
+    peri = cv2.arcLength(contour, True)
+
+    # Approximate the contour
+    approx = cv2.approxPolyDP(contour, 0.05 * peri, True)
+    # approx = cv2.approxPolyDP(contour, 10, True)
+
+    # # Draw the approximated polygon
+    # colour = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+    # cv2.polylines(colour, [approx], True, (0, 255, 255), 2)  # Yellow for approximation
+    # cv2.imshow(f"Debug View:", colour)
+
+    # Count the number of vertices
+    vertices = len(approx)
+    
+    if vertices == 3:
+        shape = "Triangle"
+    else:
+        # SQUARE VS CIRCLE
+        pts_square = 0
+        pts_circle = 0
+
+        # number of vertices
+        if vertices == 4:
+            pts_square += 1
+        elif vertices > 4:
+            pts_circle += 1
+        
+        # hough circles
+        img = cv2.medianBlur(gray, 5)
+        circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 20,
+                    param1=80 ,param2=20, minRadius=0, maxRadius=0)
+        if circles is not None:
+            pts_circle += 1
+        else:
+            pts_square += 1
+
+        # circularity
+        area = cv2.contourArea(biggest_contour)
+        circularity = (4 * np.pi * area) / (peri * peri)
+        if 0.84 <= circularity <= 1.1:
+            pts_circle += 1
+        else:
+            pts_square += 1
 
         """
         circle perimeter:       +- 160  (150-170)
         rectangle perimeter:    +- 180  (170-190)
         triangle perimeter:     +- 194  (190-200)
         """
-
-        # Approximate the contour
-        approx = cv2.approxPolyDP(contour, 0.05 * peri, True)
-        # approx = cv2.approxPolyDP(contour, 10, True)
-
-        # # Draw the approximated polygon
-        # colour = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
-        # cv2.polylines(colour, [approx], True, (0, 255, 255), 2)  # Yellow for approximation
-        # cv2.imshow(f"Debug View:", colour)
-
-        # Count the number of vertices
-        vertices = len(approx)
         
-        ######## add triangle stuff
-        if vertices == 3:
-            shape = "Triangle"
+        # perimeter
+        if peri < 170:
+            pts_circle += 1
         else:
-            # SQUARE VS CIRCLE
-            pts_square = 0
-            pts_circle = 0
+            pts_square += 1
+        
+        # longest edge
+        approx = cv2.approxPolyDP(biggest_contour, 0.03 * peri, True)
+        longest_edge = find_longest_edges(approx, 1)[0]
+        p1, p2 = longest_edge
+        length = calculate_distance(p1, p2)
+        if length >= 30: # used to be 25 (0.03 * peri)
+            pts_square += 1
+        else:
+            pts_circle += 1
 
-            # number of vertices
-            if vertices == 4:
-                pts_square += 1
-            elif vertices > 4:
-                pts_circle += 1
-            
-            # hough circles
-            img = cv2.medianBlur(gray, 5)
-            circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 20,
-                        param1=80 ,param2=20, minRadius=0, maxRadius=0)
-            if circles is not None:
-                pts_circle += 1
-            else:
-                pts_square += 1
+        # number of edges with close approximation
+        approx = cv2.approxPolyDP(biggest_contour, 0.02 * peri, True)
+        if len(approx) >= 8:
+            pts_circle += 1
+        else:
+            pts_square += 1
 
-            # circularity
-            area = cv2.contourArea(contour)
-            circularity = (4 * np.pi * area) / (peri * peri)
-            if 0.84 <= circularity <= 1.1:
-                pts_circle += 1
-            else:
-                pts_square += 1
-            
-            # perimeter
-            if peri < 170:
-                pts_circle += 1
-            else:
-                pts_square += 1
-            
-            # longest edge
-            approx = cv2.approxPolyDP(biggest_contour, 0.03 * peri, True)
-            longest_edge = find_longest_edges(approx, 1)[0]
-            p1, p2 = longest_edge
-            length = calculate_distance(p1, p2)
-            if length >= 30: # used to be 25 (0.03 * peri)
-                pts_square += 1
-            else:
-                pts_circle += 1
+        # min enclosing circle
+        _, radius = cv2.minEnclosingCircle(biggest_contour)
+        circle_area = np.pi * (radius ** 2)
+        if area / circle_area > 0.8:
+            pts_circle += 1
+        else:
+            pts_square += 1
 
-            # number of edges with close approximation
-            approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
-            if len(approx) >= 8:
-                pts_circle += 1
-            else:
-                pts_square += 1
-
-            # min enclosing circle
-            (x, y), radius = cv2.minEnclosingCircle(contour)
-            circle_area = np.pi * (radius ** 2)
-            if area / circle_area > 0.8:  # Adjust threshold
-                pts_circle += 1
-            else:
-                pts_square += 1
-
-            # final decision
-            if pts_circle > pts_square:
-                shape = "Circle"
-            else:
-                shape = "Square"
+        # final decision
+        if pts_circle > pts_square:
+            shape = "Circle"
+        else:
+            shape = "Square"
 
     return str(num_shapes), shape
 
