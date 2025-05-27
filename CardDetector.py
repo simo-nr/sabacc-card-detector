@@ -17,7 +17,7 @@ CARD_HISTORY = 5
 font = cv2.FONT_HERSHEY_SIMPLEX
 
 global video_path
-video_path = "media/test_triangle.mov"
+video_path = "media/test_vid_6.mov"
 global videostream
 videostream = VideoStream.VideoStream(video_path).start()
 
@@ -34,7 +34,7 @@ def main():
     for_1_times = []
 
     prev_edges = np.zeros((1, 1))
-    cam_quit = 0 # Loop control variable
+    cam_quit = 0  # Loop control variable
     while cam_quit == 0:
         frame_start_time = time.time()
         # Grab frame from video stream
@@ -46,18 +46,18 @@ def main():
             break
 
         ##### MAIN PROCESSING #####
-        
+
         frame, prev_edges = detect_cards(frame, prev_edges)
 
         ##### END MAIN PROCESSING #####
-        
+
         # Show the video feed
         cv2.imshow("Live Feed", frame)
 
         key = cv2.waitKey(1) & 0xFF
         if key == ord("q"):
             cam_quit = 1
-        
+
         frame_counter += 1
         frame_time = time.time() - frame_start_time
         frame_times.append(frame_time)
@@ -89,7 +89,6 @@ def main():
 
     # print(f"\033[93maverage for_1 time: {average_for_1_time}\033[0m")
 
-
     # print(f"\033[92mpercent for 1: {percent_for_1}\033[0m")
 
     # total_percent = percent_preprocess + percent_detection + percent_for_1
@@ -98,9 +97,10 @@ def main():
     # average_fetch_time = sum(fetch_frame_times) / len(fetch_frame_times)
     # print(f"average fetch frame time: {average_fetch_time}")
     # print(f"percent fetch time: {average_fetch_time / average_frame_time}")
-        
+
     cv2.destroyAllWindows()
     videostream.stop()
+
 
 def detect_cards(frame, prev_edges):
     # Preprocess the frame (gray, blur, and threshold it)
@@ -144,7 +144,7 @@ def detect_cards(frame, prev_edges):
                 #     cv2.imshow(f"Card: {i}", card.debug_view)
                 # cv2.imshow(f"Card: {i}", card.warp)
                 tmp_cnts.append(card.contour)
-            cv2.drawContours(frame, tmp_cnts, -1, (255,0,0), 2)
+            cv2.drawContours(frame, tmp_cnts, -1, (255, 0, 0), 2)
 
     # for i, card in enumerate(cards):
     #     if card.debug_view is not None:
@@ -167,10 +167,12 @@ def preprocess_frame(frame, previous_edges=None):
     TEMP_SMOOTHING = True
 
     if MORPH_OP:
-        kernel = np.ones((3,3), np.uint8)  # Small kernel to avoid over-smoothing
+        kernel = np.ones((3, 3), np.uint8)  # Small kernel to avoid over-smoothing
         edges = cv2.Canny(gray, 110, 150)
         edges = cv2.dilate(edges, kernel, iterations=1)  # Expand edges slightly
-        edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel, iterations=2)  # Close gaps
+        edges = cv2.morphologyEx(
+            edges, cv2.MORPH_CLOSE, kernel, iterations=2
+        )  # Close gaps
 
     if TEMP_SMOOTHING:
         if previous_edges is None:
@@ -178,9 +180,9 @@ def preprocess_frame(frame, previous_edges=None):
         alpha = 0.5  # Adjust for smoother or sharper edges
         edges = cv2.addWeighted(previous_edges, alpha, edges, 1 - alpha, 0)
         previous_edges = edges.copy()  # Update for the next frame
-    
+
     # Step 3: Apply Thresholding
-    thresh_level = 175 # 190 for bright cards, 120 for dark cards, maybe 175 for bright cards because of smudges
+    thresh_level = 175  # 190 for bright cards, 120 for dark cards, maybe 175 for bright cards because of smudges
     _, thresholded = cv2.threshold(gray, thresh_level, 255, cv2.THRESH_BINARY)
 
     # Step 4: Find contours in the edge-detected image
@@ -195,20 +197,25 @@ def preprocess_frame(frame, previous_edges=None):
 
     return filtered, edges
 
+
 def find_cards(frame, og_frame):
     # Find contours in the tresholded image
-    contours, hierarchy = cv2.findContours(frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv2.findContours(
+        frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+    )
     # If there are no contours, do nothing
     if len(contours) == 0:
         return [], []
-    
+
     # # draw contours on frame
     # all_cont_frame = og_frame.copy()
     # cv2.drawContours(all_cont_frame, contours, -1, (0, 255, 0), 2)
     # cv2.imshow("All contours", all_cont_frame)
 
     # sort contour indices by contour size
-    index_sort = sorted(range(len(contours)), key=lambda i : cv2.contourArea(contours[i]), reverse=True)
+    index_sort = sorted(
+        range(len(contours)), key=lambda i: cv2.contourArea(contours[i]), reverse=True
+    )
 
     # Initialize empty sorted contour and hierarchy lists
     cnts_sort = []
@@ -216,13 +223,13 @@ def find_cards(frame, og_frame):
     cnt_is_card = np.zeros(len(contours), dtype=int)
 
     # Fill empty lists with sorted contour and sorted hierarchy.
-    # Now, the indices of the contour list still correspond with those of the hierarchy list. 
+    # Now, the indices of the contour list still correspond with those of the hierarchy list.
     # The hierarchy array can be used to check if the contours have parents or not.
     for i in index_sort:
         cnts_sort.append(contours[i])
         hier_sort.append(hierarchy[0][i])
 
-    # Determine which of the contours are cards by applying the following criteria: 
+    # Determine which of the contours are cards by applying the following criteria:
     # 1) Smaller area than the maximum card size
     # 2) Bigger area than the minimum card size
     # 3) Have no parents
@@ -232,7 +239,11 @@ def find_cards(frame, og_frame):
         peri = cv2.arcLength(cnts_sort[i], True)
         approx = cv2.approxPolyDP(cnts_sort[i], 0.01 * peri, True)
 
-        if ((size > CARD_MIN_AREA) and (hier_sort[i][3] == -1) and (4 <= len(approx) <= 6)):
+        if (
+            (size > CARD_MIN_AREA)
+            and (hier_sort[i][3] == -1)
+            and (4 <= len(approx) <= 6)
+        ):
             cnt_is_card[i] = 1
 
     # # draw contours of all cards on frame
@@ -243,28 +254,45 @@ def find_cards(frame, og_frame):
     # TODO: simplify this so cnt_is_card isnt returned
     return cnts_sort, cnt_is_card
 
+
 def draw_results(frame, card):
     """Draw the card name, center point, and contour on the camera image."""
 
     x = card.center[0]
     y = card.center[1]
-    cv2.circle(frame, (x,y), 5, (255,0,0), -1)
+    cv2.circle(frame, (x, y), 5, (255, 0, 0), -1)
 
     rank_name = card.rank
     suit_name = card.suit
     card_sign = card.sign
 
     # Draw card name twice, so letters have black outline
-    cv2.putText(frame, card_sign, (x-60,y-45), font, 1, (0,0,0), 3, cv2.LINE_AA)
-    cv2.putText(frame, card_sign, (x-60,y-45), font, 1, (50,200,200), 2, cv2.LINE_AA)
+    cv2.putText(frame, card_sign, (x - 60, y - 45), font, 1, (0, 0, 0), 3, cv2.LINE_AA)
+    cv2.putText(
+        frame, card_sign, (x - 60, y - 45), font, 1, (50, 200, 200), 2, cv2.LINE_AA
+    )
 
-    cv2.putText(frame, (rank_name+' of'), (x-60,y-10), font, 1, (0,0,0), 3, cv2.LINE_AA)
-    cv2.putText(frame, (rank_name+' of'), (x-60,y-10), font, 1, (50,200,200), 2, cv2.LINE_AA)
+    cv2.putText(
+        frame, (rank_name + " of"), (x - 60, y - 10), font, 1, (0, 0, 0), 3, cv2.LINE_AA
+    )
+    cv2.putText(
+        frame,
+        (rank_name + " of"),
+        (x - 60, y - 10),
+        font,
+        1,
+        (50, 200, 200),
+        2,
+        cv2.LINE_AA,
+    )
 
-    cv2.putText(frame, suit_name, (x-60,y+25), font, 1, (0,0,0), 3, cv2.LINE_AA)
-    cv2.putText(frame, suit_name, (x-60,y+25), font, 1, (50,200,200), 2, cv2.LINE_AA)
+    cv2.putText(frame, suit_name, (x - 60, y + 25), font, 1, (0, 0, 0), 3, cv2.LINE_AA)
+    cv2.putText(
+        frame, suit_name, (x - 60, y + 25), font, 1, (50, 200, 200), 2, cv2.LINE_AA
+    )
 
     return frame
+
 
 if __name__ == "__main__":
     main()
