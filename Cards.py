@@ -8,20 +8,21 @@ import time
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 
+
 class Card:
     """Structure to store information about query cards in the camera image."""
 
     def __init__(self):
-        self.contour = [] # Contour of card
-        self.corner_pts = [] # Corner points of card
-        self.center = [] # Center point of card
-        self.warp = [] # 310x500, flattened, grayed, blurred image
-        self.sign = "Unknown" # positive or negative
-        self.rank_img = [] # Thresholded, sized image of card's rank
-        self.rank = "Unknown" # Rank of card
-        self.suit = "Unknown" # Suit of card
-        
-        self.debug_view = [] # Debug view of card
+        self.contour = []  # Contour of card
+        self.corner_pts = []  # Corner points of card
+        self.center = []  # Center point of card
+        self.warp = []  # 310x500, flattened, grayed, blurred image
+        self.sign = "Unknown"  # positive or negative
+        self.rank_img = []  # Thresholded, sized image of card's rank
+        self.rank = "Unknown"  # Rank of card
+        self.suit = "Unknown"  # Suit of card
+
+        self.debug_view = []  # Debug view of card
 
 
 def preprocess_card(contour, image):
@@ -54,7 +55,7 @@ def preprocess_card(contour, image):
     # find the intersection of the lines
     intersections = []
     for i in range(len(extended_lines)):
-        for j in range(i+1, len(extended_lines)):
+        for j in range(i + 1, len(extended_lines)):
             try:
                 pt1, pt2 = extended_lines[i]
                 pt3, pt4 = extended_lines[j]
@@ -62,12 +63,19 @@ def preprocess_card(contour, image):
                 m2, b2 = line_equation(pt3, pt4)
                 intersections.append([line_intersection(m1, b1, m2, b2)])
             except:
-                print(f"Line 1: Point 1: {pt1}, Point 2: {pt2}, Slope: {round(m1, 2)}, Intercept: {round(b1, 2)}")
-                print(f"Line 2: Point 3: {pt3}, Point 4: {pt4}, Slope: {round(m2, 2)}, Intercept: {round(b2, 2)}")
+                print(
+                    f"Line 1: Point 1: {pt1}, Point 2: {pt2}, Slope: {round(m1, 2)}, Intercept: {round(b1, 2)}"
+                )
+                print(
+                    f"Line 2: Point 3: {pt3}, Point 4: {pt4}, Slope: {round(m2, 2)}, Intercept: {round(b2, 2)}"
+                )
 
-    intersections = [pt for pt in intersections if pt[0] is not None and 
-                 0 <= pt[0][0] <= 1920 and 0 <= pt[0][1] <= 1080]
-    
+    intersections = [
+        pt
+        for pt in intersections
+        if pt[0] is not None and 0 <= pt[0][0] <= 1920 and 0 <= pt[0][1] <= 1080
+    ]
+
     # TODO better intersection filter, if still longer than 4, remove furthest outlier
 
     pts = np.float32(intersections)
@@ -89,7 +97,9 @@ def preprocess_card(contour, image):
 
     card.sign = get_sign(card)
     card.rank, card.suit = get_rank_and_suit(card)
+    # card.rank, card.suit = "4", "Triangle"  # For debugging purposes, hardcoded values
 
+    # TODO: proper logging + verbosity flag
     ##################### DEBUG #####################
     p1 = (int(pts[0][0][0]), int(pts[0][0][1]))
     p2 = (int(pts[1][0][0]), int(pts[1][0][1]))
@@ -116,18 +126,32 @@ def preprocess_card(contour, image):
     cv2.putText(mod_image, f"{p3}", p3, font, 1, (255, 0, 255), 2, cv2.LINE_AA)
     cv2.putText(mod_image, f"{p4}", p4, font, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
-    cv2.putText(mod_image, f"{sum_p1}", sum_loc_p1, font, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    cv2.putText(mod_image, f"{sum_p2}", sum_loc_p2, font, 1, (0, 255, 255), 2, cv2.LINE_AA)
-    cv2.putText(mod_image, f"{sum_p3}", sum_loc_p3, font, 1, (255, 0, 255), 2, cv2.LINE_AA)
-    cv2.putText(mod_image, f"{sum_p4}", sum_loc_p4, font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+    cv2.putText(
+        mod_image, f"{sum_p1}", sum_loc_p1, font, 1, (0, 0, 255), 2, cv2.LINE_AA
+    )
+    cv2.putText(
+        mod_image, f"{sum_p2}", sum_loc_p2, font, 1, (0, 255, 255), 2, cv2.LINE_AA
+    )
+    cv2.putText(
+        mod_image, f"{sum_p3}", sum_loc_p3, font, 1, (255, 0, 255), 2, cv2.LINE_AA
+    )
+    cv2.putText(
+        mod_image, f"{sum_p4}", sum_loc_p4, font, 1, (0, 255, 0), 2, cv2.LINE_AA
+    )
 
     # cv2.imshow("mod by flat", mod_image)
 
     # Place the sign of the card on top of the debug view
     card.debug_view = card.warp.copy()
-    cv2.putText(card.debug_view, card.sign, (10, 30), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
-    cv2.putText(card.debug_view, card.rank, (10, 60), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
-    cv2.putText(card.debug_view, card.suit, (10, 90), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+    cv2.putText(
+        card.debug_view, card.sign, (10, 30), font, 1, (0, 255, 0), 2, cv2.LINE_AA
+    )
+    cv2.putText(
+        card.debug_view, card.rank, (10, 60), font, 1, (0, 255, 0), 2, cv2.LINE_AA
+    )
+    cv2.putText(
+        card.debug_view, card.suit, (10, 90), font, 1, (0, 255, 0), 2, cv2.LINE_AA
+    )
     ################## END OF DEBUG ##################
 
     # if card.rank != "4" or card.suit != "Triangle":
@@ -136,26 +160,27 @@ def preprocess_card(contour, image):
 
     return card
 
+
 def get_rank_and_suit(card: Card) -> Tuple[str, str]:
     """
-    Determines rank and suit of card based on warp view of card. 
+    Determines rank and suit of card based on warp view of card.
     Looks for the number of contours and shape of biggest contour on the center of the card.
     """
     # Define the coordinates for the region of interest (ROI)
     x_start, y_start = 55, 115  # Starting coordinates (top-left corner)
-    x_end, y_end = 255, 400     # Ending coordinates (bottom-right corner)
+    x_end, y_end = 255, 400  # Ending coordinates (bottom-right corner)
 
-    # # place dots on the image to show the ROI
-    # cv2.circle(card.warp, (x_start, y_start), 9, (0, 0, 255), -1)
-    # cv2.circle(card.warp, (x_end, y_end), 9, (0, 0, 255), -1)
-    # cv2.imshow("ROI", card.warp)
-    
+    # place dots on the image to show the ROI
+    cv2.circle(card.warp, (x_start, y_start), 9, (0, 0, 255), -1)
+    cv2.circle(card.warp, (x_end, y_end), 9, (0, 0, 255), -1)
+    cv2.imshow("ROI", card.warp)
+
     # Crop and treshold the rank image from the card
     rank_img = card.warp[y_start:y_end, x_start:x_end]
 
     thresh_level: int = 200
     _, card.rank_img = cv2.threshold(rank_img, thresh_level, 255, cv2.THRESH_BINARY)
-    
+
     gray = cv2.cvtColor(card.rank_img, cv2.COLOR_BGR2GRAY)
     gray = cv2.bitwise_not(gray)
     # need to threshold again for some reason because the previous thresholding looks weird
@@ -181,10 +206,10 @@ def get_rank_and_suit(card: Card) -> Tuple[str, str]:
             actual_contours.append(contour)
 
     num_shapes = len(actual_contours)
-    
+
     cv2.drawContours(image_with_contours, actual_contours, -1, (0, 255, 0), 2)
 
-    # cv2.imshow("Contours", image_with_contours)
+    cv2.imshow("Contours", image_with_contours)
 
     # Determine suit of biggest contour
     shape = "Unknown"
@@ -202,7 +227,7 @@ def get_rank_and_suit(card: Card) -> Tuple[str, str]:
 
     # Count the number of vertices
     vertices = len(approx)
-    
+
     if vertices == 3:
         shape = "Triangle"
     else:
@@ -215,11 +240,19 @@ def get_rank_and_suit(card: Card) -> Tuple[str, str]:
             pts_square += 1
         elif vertices > 4:
             pts_circle += 1
-        
+
         # hough circles
         img = cv2.medianBlur(gray, 5)
-        circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 20,
-                    param1=80 ,param2=20, minRadius=0, maxRadius=0)
+        circles = cv2.HoughCircles(
+            img,
+            cv2.HOUGH_GRADIENT,
+            1,
+            20,
+            param1=80,
+            param2=20,
+            minRadius=0,
+            maxRadius=0,
+        )
         if circles is not None:
             pts_circle += 1
         else:
@@ -227,30 +260,35 @@ def get_rank_and_suit(card: Card) -> Tuple[str, str]:
 
         # circularity
         area = cv2.contourArea(biggest_contour)
-        circularity = (4 * np.pi * area) / (peri * peri)
-        if 0.84 <= circularity <= 1.1:
-            pts_circle += 1
-        else:
-            pts_square += 1
+        # TODO: fix error where peri is 0 but area is not
+        try:
+            circularity = (4 * np.pi * area) / (peri * peri)
+            if 0.84 <= circularity <= 1.1:
+                pts_circle += 1
+            else:
+                pts_square += 1
+        except:
+            print(f"Area: {area}, Perimeter: {peri}")
+            pass
 
         """
         circle perimeter:       +- 160  (150-170)
         rectangle perimeter:    +- 180  (170-190)
         triangle perimeter:     +- 194  (190-200)
         """
-        
+
         # perimeter
         if peri < 170:
             pts_circle += 1
         else:
             pts_square += 1
-        
+
         # longest edge
         approx = cv2.approxPolyDP(biggest_contour, 0.03 * peri, True)
         longest_edge = find_longest_edges(approx, 1)[0]
         p1, p2 = longest_edge
         length = calculate_distance(p1, p2)
-        if length >= 30: # used to be 25 (0.03 * peri)
+        if length >= 30:  # used to be 25 (0.03 * peri)
             pts_square += 1
         else:
             pts_circle += 1
@@ -264,7 +302,7 @@ def get_rank_and_suit(card: Card) -> Tuple[str, str]:
 
         # min enclosing circle
         _, radius = cv2.minEnclosingCircle(biggest_contour)
-        circle_area = np.pi * (radius ** 2)
+        circle_area = np.pi * (radius**2)
         if area / circle_area > 0.8:
             pts_circle += 1
         else:
@@ -278,8 +316,9 @@ def get_rank_and_suit(card: Card) -> Tuple[str, str]:
 
     return str(num_shapes), shape
 
+
 def get_sign(card: Card) -> str:
-    """Determines the sign of the card based on overall color, 
+    """Determines the sign of the card based on overall color,
     green for positive, red for negative"""
 
     # hue saturation value
@@ -294,7 +333,6 @@ def get_sign(card: Card) -> str:
     mask_red = cv2.inRange(hsv, lower_hsv_red, upper_hsv_red)
     mask_green = cv2.inRange(hsv, lower_hsv_green, upper_hsv_green)
 
-
     pixels_red = cv2.countNonZero(mask_red)
     pixels_green = cv2.countNonZero(mask_green)
 
@@ -304,6 +342,7 @@ def get_sign(card: Card) -> str:
 
     return "Positive" if pixels_green > pixels_red else "Negative"
 
+
 def flatten(image, pts):
     """
     Flattens an image of a card into a top-down 310x500 perspective.
@@ -311,9 +350,9 @@ def flatten(image, pts):
     """
 
     pts = pts.reshape(4, 2)
-    
+
     # choose top left point, smallest sum of coordinates
-    s = np.sum(pts, axis = 1)
+    s = np.sum(pts, axis=1)
     tl_index = np.argmin(s)
     tl = pts[tl_index]
 
@@ -339,9 +378,9 @@ def flatten(image, pts):
     if len(pts) != 1:
         print("points: ", pts)
     bl = pts[0]
-    
+
     # make array of points in order of [top left, top right, bottom right, bottom left]
-    temp_rect = np.zeros((4, 2), dtype = "float32")
+    temp_rect = np.zeros((4, 2), dtype="float32")
     temp_rect[0] = tl
     temp_rect[1] = tr
     temp_rect[2] = br
@@ -357,23 +396,66 @@ def flatten(image, pts):
 
     # Create destination array, calculate perspective transform matrix,
     # and warp card image
-    dst = np.array([[0, 0], [maxWidth-1, 0], [maxWidth-1, maxHeight-1], [0, maxHeight-1]], np.float32)
+    dst = np.array(
+        [[0, 0], [maxWidth - 1, 0], [maxWidth - 1, maxHeight - 1], [0, maxHeight - 1]],
+        np.float32,
+    )
     M = cv2.getPerspectiveTransform(temp_rect, dst)
     warp = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
 
     # draw the name of the corner on the image
-    cv2.putText(image, f"top left", (int(temp_rect[0][0]), int(temp_rect[0][1]) + 20), font, 1, (0, 255, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"top right", (int(temp_rect[1][0]), int(temp_rect[1][1]) + 20), font, 1, (255, 0, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"bottom right", (int(temp_rect[2][0]), int(temp_rect[2][1]) + 20), font, 1, (0, 255, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, f"bottom left", (int(temp_rect[3][0]), int(temp_rect[3][1]) + 20), font, 1, (255, 0, 0), 2, cv2.LINE_AA)
-    
+    cv2.putText(
+        image,
+        f"top left",
+        (int(temp_rect[0][0]), int(temp_rect[0][1]) + 20),
+        font,
+        1,
+        (0, 255, 255),
+        2,
+        cv2.LINE_AA,
+    )
+    cv2.putText(
+        image,
+        f"top right",
+        (int(temp_rect[1][0]), int(temp_rect[1][1]) + 20),
+        font,
+        1,
+        (255, 0, 255),
+        2,
+        cv2.LINE_AA,
+    )
+    cv2.putText(
+        image,
+        f"bottom right",
+        (int(temp_rect[2][0]), int(temp_rect[2][1]) + 20),
+        font,
+        1,
+        (0, 255, 255),
+        2,
+        cv2.LINE_AA,
+    )
+    cv2.putText(
+        image,
+        f"bottom left",
+        (int(temp_rect[3][0]), int(temp_rect[3][1]) + 20),
+        font,
+        1,
+        (255, 0, 0),
+        2,
+        cv2.LINE_AA,
+    )
+
     return warp, image
+
 
 def calculate_distance(point1: Tuple[int, int], point2: Tuple[int, int]) -> float:
     """Calculates the Euclidean distance between two points."""
-    return math.sqrt((point2[0] - point1[0])**2 + (point2[1] - point1[1])**2)
+    return math.sqrt((point2[0] - point1[0]) ** 2 + (point2[1] - point1[1]) ** 2)
 
-def find_longest_edges(approx: np.ndarray, top_n: int = 4) -> List[Tuple[Tuple[int, int], Tuple[int, int]]]:
+
+def find_longest_edges(
+    approx: np.ndarray, top_n: int = 4
+) -> List[Tuple[Tuple[int, int], Tuple[int, int]]]:
     """
     Given an approxPolyDP contour, finds the top N longest edges.
     Returns a list of line segments [(pt1, pt2), ...] sorted by length.
@@ -381,16 +463,21 @@ def find_longest_edges(approx: np.ndarray, top_n: int = 4) -> List[Tuple[Tuple[i
     edges: List[Tuple[float, Tuple[int, int], Tuple[int, int]]] = []
     for i in range(len(approx)):
         pt1: Tuple[int, int] = tuple(approx[i][0])  # Current point
-        pt2: Tuple[int, int] = tuple(approx[(i + 1) % len(approx)][0])  # Next point (loop back to start)
+        pt2: Tuple[int, int] = tuple(
+            approx[(i + 1) % len(approx)][0]
+        )  # Next point (loop back to start)
         # Calculate Euclidean distance
         length: float = np.linalg.norm(np.array(pt1) - np.array(pt2))
         edges.append((length, pt1, pt2))
-    
+
     # Sort by length (descending)
     edges.sort(reverse=True, key=lambda x: x[0])
     return [(edge[1], edge[2]) for edge in edges[:top_n]]  # Return only points
 
-def line_equation(pt1: Tuple[int, int], pt2: Tuple[int, int]) -> Tuple[Optional[float], float]:
+
+def line_equation(
+    pt1: Tuple[int, int], pt2: Tuple[int, int]
+) -> Tuple[Optional[float], float]:
     """Returns (slope, intercept) for a line passing through pt1 and pt2."""
     x1, y1 = pt1
     x2, y2 = pt2
@@ -400,7 +487,10 @@ def line_equation(pt1: Tuple[int, int], pt2: Tuple[int, int]) -> Tuple[Optional[
     b: float = y1 - m * x1
     return m, b
 
-def line_intersection(m1: Optional[float], b1: float, m2: Optional[float], b2: float) -> Optional[Tuple[int, int]]:
+
+def line_intersection(
+    m1: Optional[float], b1: float, m2: Optional[float], b2: float
+) -> Optional[Tuple[int, int]]:
     """Finds intersection of two lines given by y = mx + b."""
     if m1 is None and m2 is None:  # Both lines are vertical
         return None
@@ -418,7 +508,10 @@ def line_intersection(m1: Optional[float], b1: float, m2: Optional[float], b2: f
     y: float = m1 * x + b1
     return int(x), int(y)
 
-def extend_line(pt1: Tuple[int, int], pt2: Tuple[int, int], length: int = 1000) -> Tuple[Tuple[int, int], Tuple[int, int]]:
+
+def extend_line(
+    pt1: Tuple[int, int], pt2: Tuple[int, int], length: int = 1000
+) -> Tuple[Tuple[int, int], Tuple[int, int]]:
     """Extends a line segment far beyond its original length."""
     x1, y1 = pt1
     x2, y2 = pt2
@@ -427,4 +520,3 @@ def extend_line(pt1: Tuple[int, int], pt2: Tuple[int, int], length: int = 1000) 
     new_pt1: Tuple[int, int] = (int(x1 - dx * scale), int(y1 - dy * scale))
     new_pt2: Tuple[int, int] = (int(x2 + dx * scale), int(y2 + dy * scale))
     return new_pt1, new_pt2
-
