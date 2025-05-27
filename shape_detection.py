@@ -2,8 +2,10 @@ import cv2
 import numpy as np
 
 # Load the image
-image = cv2.imread("media/shapes.png")
+image = cv2.imread("junk_stuff/smoothing_test_square.png")
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+# invert
+gray = cv2.bitwise_not(gray)
 blur = cv2.GaussianBlur(gray, (5, 5), 0)
 _, thresh = cv2.threshold(blur, 127, 255, cv2.THRESH_BINARY)
 thresh = cv2.bitwise_not(thresh)

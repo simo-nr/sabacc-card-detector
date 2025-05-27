@@ -25,7 +25,7 @@ class VideoStream:
         self.stopped = False
 
     def start(self):
-	# Start the thread to read frames from the video stream
+	    # Start the thread to read frames from the video stream
         Thread(target=self.update,args=()).start()
         return self
     
@@ -40,7 +40,7 @@ class VideoStream:
 
             # Otherwise, grab the next frame from the stream
             (self.grabbed, self.frame) = self.stream.read()
-            time.sleep(0.01)
+            # time.sleep(0.03)
 
     def read(self):
 		# Return the most recent frame
