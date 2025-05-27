@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 # Load the image
-image_path = "media/test_img_red_colour.png"  # Change to your image path
+image_path = "media/colour_check.png"  # Change to your image path
 image = cv2.imread(image_path)
 
 if image is None:
